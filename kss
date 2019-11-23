@@ -160,6 +160,8 @@ def main(args):
         elif (cnt_allcontainers + cnt_allicontainers) != (
                 cnt_failcontainers + cnt_failicontainers):
             header += f" {colourText('RUNNING', 'blue')}"
+        else:
+            header += f" {colourText('SUCCESS', 'green')}"
 
         print(header + "\n")
 
