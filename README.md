@@ -8,6 +8,9 @@ If you specify the `-l` option it will shows the output log as well, you can adj
 
 You can use the `-r` option with a regexp to restrict the status (or the log output) to certain containers.
 
+## Install
+
+You just make sure you have >python3.6, fzf and kubctl. Just download the [script](https://raw.githubusercontent.com/chmouel/kss/master/kss) directly into your path. I may do a [krew](https://github.com/kubernetes-sigs/krew) plugin if this get popular enough.
 
 ## Screenshots
 
