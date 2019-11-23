@@ -18,6 +18,7 @@ import sys
 import subprocess
 import json
 import re
+import os
 
 
 def colourText(text, color):
@@ -83,7 +84,7 @@ def overcnt(jeez, kctl, pod, args):
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("pod", nargs="?", default="")
+parser.add_argument("pod", nargs="*", default="")
 parser.add_argument('-n', dest="namespace", type=str)
 parser.add_argument(
     '-r',
@@ -110,8 +111,10 @@ def main(args):
         kctl += f" -n {args.namespace}"
 
     if not args.pod:
-        import os
         runcmd = f"{kctl} get pods -o name|fzf -1 --preview='kubectl describe {{}}'"
+        args.pod = [os.popen(runcmd).read().strip().replace("pod/", "")]
+    elif len(args.pod) == 1:
+        runcmd = f"{kctl} get pods -o name|fzf -1 -q '{args.pod[0]}' --preview='kubectl describe {{}}'"
         args.pod = [os.popen(runcmd).read().strip().replace("pod/", "")]
 
     for pod in args.pod:
