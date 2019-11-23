@@ -10,3 +10,19 @@ You can use the `-r` option with a regexp to restrict the status (or the log out
 
 
 ## Screenshots
+
+### Success run
+
+![Success run](.screenshots/success.png)
+
+### Failed run
+
+![Fail run](.screenshots/failure.png)
+
+### Failed run with logs
+
+![Fail run](.screenshots/logging.png)
+
+### Selecting a pod with fzf
+
+[![Select a pod with FZF](https://asciinema.org/a/XhSTVsivuePNGpQx4DU0m0lWS.png)](https://asciinema.org/a/XhSTVsivuePNGpQx4DU0m0lWS)
