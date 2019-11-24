@@ -28,7 +28,7 @@ With zsh you can install the [_kss](./_kss) completionfile  to your [fpath](http
 
 ![Fail run](.screenshots/logging.png)
 
-### Restrict to show logs only to certain container
+### Restrict to show logs only to certain container and only one line
 
 ![Restrict to some pod](.screenshots/restrict.png)
 
