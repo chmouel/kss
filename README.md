@@ -30,4 +30,4 @@ With zsh you can install the [_kss](./_kss) completionfile  to your [fpath](http
 
 ### Selecting a pod with fzf
 
-[![Select a pod with FZF](https://asciinema.org/a/XhSTVsivuePNGpQx4DU0m0lWS.png)](https://asciinema.org/a/XhSTVsivuePNGpQx4DU0m0lWS)
+[![Select a pod with FZF](https://asciinema.org/a/M6yotJ6Vi1ftRZ6syYU5UpT82.png)](https://asciinema.org/a/M6yotJ6Vi1ftRZ6syYU5UpT82)
