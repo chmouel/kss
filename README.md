@@ -28,6 +28,10 @@ With zsh you can install the [_kss](./_kss) completionfile  to your [fpath](http
 
 ![Fail run](.screenshots/logging.png)
 
+### Restrict to show logs only to certain container
+
+![Restrict to some pod](.screenshots/restrict.png)
+
 ### Selecting a pod with fzf
 
 [![Select a pod with FZF](https://asciinema.org/a/M6yotJ6Vi1ftRZ6syYU5UpT82.png)](https://asciinema.org/a/M6yotJ6Vi1ftRZ6syYU5UpT82)
