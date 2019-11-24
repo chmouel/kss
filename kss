@@ -129,7 +129,7 @@ def main(args):
                     return True
             return False
 
-        if not 'initContainerStatuses' in jeez['status']:
+        if 'initContainerStatuses' not in jeez['status']:
             jeez['status']['initContainerStatuses'] = {}
 
         cnt_failicontainers = lensc(jeez['status']['initContainerStatuses'])
