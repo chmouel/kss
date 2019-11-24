@@ -149,12 +149,16 @@ def main(args):
         preview = f'{kctl} describe {{}}'
 
     if not args.pod:
-        runcmd = f"{kctl} get pods -o name|fzf -n 1 -m -1 --preview='{preview}'"
+        runcmd = f"{kctl} get pods -o name|fzf -0 -n 1 -m -1 --preview='{preview}'"
         args.pod = os.popen(runcmd).read().strip().replace("pod/",
                                                            "").split("\n")
     elif len(args.pod) == 1:
-        runcmd = f"{kctl} get pods -o name|fzf -n 1 -m -1 -q '{args.pod[0]}' --preview='{preview}'"
+        runcmd = f"{kctl} get pods -o name|fzf -0 -n 1 -m -1 -q '{args.pod[0]}' --preview='{preview}'"
         args.pod = [os.popen(runcmd).read().strip().replace("pod/", "")]
+
+    if not args.pod or not args.pod[0]:
+        print("I could not find any pods in this namespace")
+        sys.exit(1)
 
     for pod in args.pod:
         if not pod.strip():
