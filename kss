@@ -157,7 +157,7 @@ def main(args):
         args.pod = [os.popen(runcmd).read().strip().replace("pod/", "")]
 
     if not args.pod or not args.pod[0]:
-        print("I could not find any pods in this namespace")
+        print("No pods selected")
         sys.exit(1)
 
     for pod in args.pod:
