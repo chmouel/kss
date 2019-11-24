@@ -129,6 +129,9 @@ def main(args):
                     return True
             return False
 
+        if not 'initContainerStatuses' in jeez['status']:
+            jeez['status']['initContainerStatuses'] = {}
+
         cnt_failicontainers = lensc(jeez['status']['initContainerStatuses'])
         cnt_allicontainers = len(jeez['status']['initContainerStatuses'])
         cnt_failcontainers = lensc(jeez['status']['containerStatuses'])
@@ -137,26 +140,28 @@ def main(args):
         header = f"👉 {colourText('Pod', 'cyan')}: {pod} "
         header += f"{colourText('Status', 'cyan')}: "
 
+        colour = 'green'
         if hasfailure(jeez['status']['initContainerStatuses']) or hasfailure(
                 jeez['status']['containerStatuses']):
             colour = 'red'
-            header += f"{colourText('FAIL', 'red')}"
+            header += f"{colourText('FAIL', colour)}"
         elif (cnt_allcontainers + cnt_allicontainers) != (
                 cnt_failcontainers + cnt_failicontainers):
-            header += f"{colourText('RUNNING', 'blue')}"
+            colour = 'blue'
+            header += f"{colourText('RUNNING', colour)}"
         else:
-            header += f"{colourText('SUCCESS', 'green')}"
+            header += f"{colourText('SUCCESS', colour)}"
 
         print(header + "\n")
 
-        s = f"{cnt_failicontainers}/{cnt_allicontainers}"
-        colour = cnt_failicontainers != cnt_allicontainers and 'red' or 'green'
-        ss = f"⛩️  Init Containers: {colourText(s, colour)}"
-        print(ss)
-        overcnt(jeez['status']['initContainerStatuses'], kctl, pod, args)
-        print()
+        if jeez['status']['initContainerStatuses']:
+            s = f"{cnt_failicontainers}/{cnt_allicontainers}"
+            ss = f"⛩️  Init Containers: {colourText(s, colour)}"
+            print(ss)
+            overcnt(jeez['status']['initContainerStatuses'], kctl, pod, args)
+            print()
+
         s = f"{cnt_failcontainers}/{cnt_allcontainers}"
-        colour = cnt_failcontainers != cnt_allcontainers and 'red' or 'green'
         print(f"🛍️  Containers: {colourText(s, colour)}")
 
         overcnt(jeez['status']['containerStatuses'], kctl, pod, args)
