@@ -1,0 +1,25 @@
+#compdef kss
+
+args=(
+    {-h,--help}'[display help message]' \
+    {-l,--showlog}'[Show log]' \
+    {-r,--restrict}'[Retrict pods to]: :' \
+    {-n,--namespace}'[Use namespace]:*:Namespaces:->namespace' \
+    '*:: :->pods'
+)
+
+_arguments -C -s -S $args && ret=0
+
+case $state in
+  namespace)
+      _wanted namepsace expl 'show namepsace' \
+              compadd "$expl[@]" - ${(@f)$(_call_program pod oc get namespace -o name)#namespace/##} && ret=0
+      ;;
+  pods)
+      _wanted pods expl 'show pods' \
+              compadd "$expl[@]" - ${(@f)$(_call_program pod oc get pod -o name)#pod/##} && ret=0
+      ;;
+esac
+
+return ret
+

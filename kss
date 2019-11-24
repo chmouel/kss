@@ -68,7 +68,9 @@ def overcnt(jeez, kctl, pod, args):
             else:
                 state = colourText("Success", "green")
         elif state == "Waiting":
-            state = colourText(state, "grey")
+            state = colourText(
+                state + "    " + container['state']['waiting']['reason'],
+                "grey")
 
         cname = colourText(container['name'], 'white_bold')
 

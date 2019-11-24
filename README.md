@@ -12,6 +12,8 @@ You can use the `-r` option with a regexp to restrict the status (or the log out
 
 You just make sure you have >python3.6, fzf and kubctl. Just download the [script](https://raw.githubusercontent.com/chmouel/kss/master/kss) directly into your path. I may do a [krew](https://github.com/kubernetes-sigs/krew) plugin if this get popular enough.
 
+With zsh you can install the [_kss](./_kss) completionfile  to your [fpath](https://unix.stackexchange.com/a/33898).
+
 ## Screenshots
 
 ### Success run
