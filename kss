@@ -64,9 +64,9 @@ def overcnt(jeez, kctl, pod, args):
             state = colourText(state, "blue")
         elif state == "Terminated":
             if container['state']['terminated']['exitCode'] != 0:
-                state = colourText("Fail", "red")
+                state = colourText("FAIL", "red")
             else:
-                state = colourText("Success", "green")
+                state = colourText("SUCCESS", "green")
         elif state == "Waiting":
             state = colourText(
                 state + "    " + container['state']['waiting']['reason'],
