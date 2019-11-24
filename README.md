@@ -1,10 +1,10 @@
 # KSS - Kubernetes pod status on steroid
 
-A simple tool to show the current status of the pod and its associated `containers` and `initContainers`.
+A simple tool to show the current status of the pod and its associated `containers` and `initContainers`. This was developed out of frustration with `kubectl get pod` not showing much and `kubectl describe pod` showing way too much in a cryptic way. Debugging failed pods with a lot of `initContainers` and `sideCars` usually was done with `kubectl get pod -o yaml |less` wiht a lot of going up and down and a bunch of censored swearing to figure out what's going on. All those techniques for introspection and debugging are still useful  and KSS is not planning to replace them.
 
 You can specify the pods to get status for arguments if you don't it will launch [fzf](https://github.com/junegunn/fzf) and let choose it (or select automatically the first available if there is only one), use the [TAB] to select multiple pods. KSS would use itself if it find itself in the `PATH` for the FZF preview window or it will run a boring `kubectl describe`.
 
-If you specify the `-l` option it will shows the output log as well, you can adjust how many line of th log you like with the `--maxlines=INT`.
+If you specify the `-l` option it will show the output log as well, you can adjust how many line of th log you like with the `--maxlines=INT`.
 
 You can use the `-r` option with a regexp to restrict the status (or the log output) to certain containers.
 
@@ -35,3 +35,4 @@ With zsh you can install the [_kss](./_kss) completionfile  to your [fpath](http
 ### Selecting a pod with fzf
 
 [![Select a pod with FZF](https://asciinema.org/a/WNBiFbv0ExwPFsqPP9lvEx0SY.png)](https://asciinema.org/a/WNBiFbv0ExwPFsqPP9lvEx0SY)
+
