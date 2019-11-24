@@ -113,10 +113,11 @@ def main(args):
         kctl += f" -n {args.namespace}"
 
     if not args.pod:
-        runcmd = f"{kctl} get pods -o name|fzf -1 --preview='kubectl describe {{}}'"
-        args.pod = [os.popen(runcmd).read().strip().replace("pod/", "")]
+        runcmd = f"{kctl} get pods -o name|fzf -n 1 -m -1 --preview='kubectl describe {{}}'"
+        args.pod = os.popen(runcmd).read().strip().replace("pod/",
+                                                           "").split("\n")
     elif len(args.pod) == 1:
-        runcmd = f"{kctl} get pods -o name|fzf -1 -q '{args.pod[0]}' --preview='kubectl describe {{}}'"
+        runcmd = f"{kctl} get pods -o name|fzf -n 1 -m -1 -q '{args.pod[0]}' --preview='kubectl describe {{}}'"
         args.pod = [os.popen(runcmd).read().strip().replace("pod/", "")]
 
     for pod in args.pod:
@@ -155,26 +156,29 @@ def main(args):
         cnt_failcontainers = lensc(jeez['status']['containerStatuses'])
         cnt_allcontainers = len(jeez['status']['containerStatuses'])
 
-        header = f"Pod:{pod} "
-        header += f"I:{cnt_failicontainers}/{cnt_allicontainers} "
-        header += f"C:{cnt_failcontainers}/{cnt_allcontainers}"
+        header = f"👉 {colourText('Pod', 'cyan')}:{pod} "
+        header += f"{colourText('InCnt', 'cyan')}:{cnt_failicontainers}/{cnt_allicontainers} "
+        header += f"{colourText('Cnt', 'cyan')}:{cnt_failcontainers}/{cnt_allcontainers}"
+        header += f" {colourText('Status', 'cyan')}:"
 
         if hasfailure(jeez['status']['initContainerStatuses']) or hasfailure(
                 jeez['status']['containerStatuses']):
-            header += f" {colourText('Fail', 'red')}"
+            header += f"{colourText('FAIL', 'red')}"
         elif (cnt_allcontainers + cnt_allicontainers) != (
                 cnt_failcontainers + cnt_failicontainers):
-            header += f" {colourText('RUNNING', 'blue')}"
+            header += f"{colourText('RUNNING', 'blue')}"
         else:
-            header += f" {colourText('SUCCESS', 'green')}"
+            header += f"{colourText('SUCCESS', 'green')}"
 
         print(header + "\n")
 
-        print("Init Containers: ")
+        print("⛩️  Init Containers: ")
         overcnt(jeez['status']['initContainerStatuses'], kctl, pod, args)
         print()
-        print("Containers: ")
+        print("🛍️  Containers: ")
         overcnt(jeez['status']['containerStatuses'], kctl, pod, args)
+        if len(args.pod) > 1:
+            print()
 
 
 if __name__ == '__main__':
