@@ -1,6 +1,6 @@
 # KSS - Kubernetes pod status on steroid
 
-A simple tool to show the current status of the pod and its associated `containers` and `initContainers`. This was developed out of frustration with `kubectl get pod` not showing much and `kubectl describe pod` showing way too much in a cryptic way. Debugging failed pods with a lot of `initContainers` and `sideCars` usually was done with `kubectl get pod -o yaml |less` wiht a lot of going up and down and a bunch of censored swearing 🔞. All those techniques for introspection and debugging are still useful  and KSS is not planning to replace them but now thanks to **KSS** I swear less 😅
+A simple tool to show the current status of the pod and its associated `containers` and `initContainers`. This was developed out of frustration with `kubectl get pod` not showing much and `kubectl describe pod` showing way too much in a cryptic way. Debugging failed pods with a lot of `initContainers` and `sideCars` usually was done with `kubectl get pod -o yaml |less` wiht a lot of going up and down and a bunch of censored swearing 🔞. All those techniques for introspection and debugging are still useful  and KSS is not planning to replace them but now thanks to it I swear less and my sanity is back 😅.
 
 ## Usage
 
@@ -45,4 +45,4 @@ I may do a [krew](https://github.com/kubernetes-sigs/krew) plugin and/or brew ho
 
 ## Misc
 
-* The code is currently getting quite tortured, like some sort of spagethis plate 🍝 with greasy meatballs 🥩 on the top, the kind of stuff you start to write quickly and dirty out of frustration to fix a probleme and it grows it grows until it really become a unreadable beast. I probably going to rewrite it up properly with tests and all (in a compiled language perhaps?) soonishly enough. But hey who cares, since it kinda works! (until I broke it :D) 😅
+* The code is getting quite tortured, like some sort of spaghetti plate 🍝 with greasy meatballs 🥩 on the top, the kind of stuff you start to write quickly and dirty out of frustration to fix a problem and it grows it grows until it really become an unreadable beast. I probably going to rewrite it up properly with tests and all (in a compiled language perhaps?) soonish enough. But hey who cares, since it kinda works! (until I broke it :D) 😅
