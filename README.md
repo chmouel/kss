@@ -2,7 +2,7 @@
 
 A simple tool to show the current status of the pod and its associated `containers` and `initContainers`.
 
-You can specify the pods to get status for arguments if you don't it will launch [fzf](https://github.com/junegunn/fzf) and let choose it (or select automatically the first available if there is only one), use the [TAB] to select multiple pods.
+You can specify the pods to get status for arguments if you don't it will launch [fzf](https://github.com/junegunn/fzf) and let choose it (or select automatically the first available if there is only one), use the [TAB] to select multiple pods. KSS would use itself if it find itself in the `PATH` for the FZF preview window or it will run a boring `kubectl describe`.
 
 If you specify the `-l` option it will shows the output log as well, you can adjust how many line of th log you like with the `--maxlines=INT`.
 
@@ -34,4 +34,4 @@ With zsh you can install the [_kss](./_kss) completionfile  to your [fpath](http
 
 ### Selecting a pod with fzf
 
-[![Select a pod with FZF](https://asciinema.org/a/M6yotJ6Vi1ftRZ6syYU5UpT82.png)](https://asciinema.org/a/M6yotJ6Vi1ftRZ6syYU5UpT82)
+[![Select a pod with FZF](https://asciinema.org/a/WNBiFbv0ExwPFsqPP9lvEx0SY.png)](https://asciinema.org/a/WNBiFbv0ExwPFsqPP9lvEx0SY)

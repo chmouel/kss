@@ -115,17 +115,45 @@ def getstatus(hasfailures, allc, allf):
     return (colour, text)
 
 
+def which(program):
+    import os
+
+    def is_exe(fpath):
+        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+
+    fpath, fname = os.path.split(program)
+    if fpath:
+        if is_exe(program):
+            return program
+    else:
+        for path in os.environ["PATH"].split(os.pathsep):
+            exe_file = os.path.join(path, program)
+            if is_exe(exe_file):
+                return exe_file
+
+    return None
+
+
 def main(args):
     kctl = 'kubectl'
     if args.namespace:
         kctl += f" -n {args.namespace}"
 
+    myself = which('kss')
+    if myself:
+        preview = f'{myself}'
+        if args.namespace:
+            preview += f' -n {args.namespace}'
+        preview += ' {}'
+    else:
+        preview = f'{kctl} describe {{}}'
+
     if not args.pod:
-        runcmd = f"{kctl} get pods -o name|fzf -n 1 -m -1 --preview='{kctl} describe {{}}'"
+        runcmd = f"{kctl} get pods -o name|fzf -n 1 -m -1 --preview='{preview}'"
         args.pod = os.popen(runcmd).read().strip().replace("pod/",
                                                            "").split("\n")
     elif len(args.pod) == 1:
-        runcmd = f"{kctl} get pods -o name|fzf -n 1 -m -1 -q '{args.pod[0]}' --preview='{kctl} describe {{}}'"
+        runcmd = f"{kctl} get pods -o name|fzf -n 1 -m -1 -q '{args.pod[0]}' --preview='{preview}'"
         args.pod = [os.popen(runcmd).read().strip().replace("pod/", "")]
 
     for pod in args.pod:
