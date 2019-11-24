@@ -156,10 +156,8 @@ def main(args):
         cnt_failcontainers = lensc(jeez['status']['containerStatuses'])
         cnt_allcontainers = len(jeez['status']['containerStatuses'])
 
-        header = f"👉 {colourText('Pod', 'cyan')}:{pod} "
-        header += f"{colourText('InCnt', 'cyan')}:{cnt_failicontainers}/{cnt_allicontainers} "
-        header += f"{colourText('Cnt', 'cyan')}:{cnt_failcontainers}/{cnt_allcontainers}"
-        header += f" {colourText('Status', 'cyan')}:"
+        header = f"👉 {colourText('Pod', 'cyan')}: {pod} "
+        header += f"{colourText('Status', 'cyan')}: "
 
         if hasfailure(jeez['status']['initContainerStatuses']) or hasfailure(
                 jeez['status']['containerStatuses']):
@@ -169,6 +167,10 @@ def main(args):
             header += f"{colourText('RUNNING', 'blue')}"
         else:
             header += f"{colourText('SUCCESS', 'green')}"
+        header += " "
+
+        header += f"{colourText('InCnt', 'cyan')}: {cnt_failicontainers}/{cnt_allicontainers} "
+        header += f"{colourText('Cnt', 'cyan')}: {cnt_failcontainers}/{cnt_allcontainers}"
 
         print(header + "\n")
 
