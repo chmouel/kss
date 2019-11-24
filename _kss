@@ -13,13 +13,12 @@ _arguments -C -s -S $args && ret=0
 case $state in
   namespace)
       _wanted namepsace expl 'show namepsace' \
-              compadd "$expl[@]" - ${(@f)$(_call_program pod oc get namespace -o name)#namespace/##} && ret=0
+              compadd "$expl[@]" - ${(@f)$(_call_program pod kubectl get namespace -o name)#namespace/##} && ret=0
       ;;
   pods)
       _wanted pods expl 'show pods' \
-              compadd "$expl[@]" - ${(@f)$(_call_program pod oc get pod -o name)#pod/##} && ret=0
+              compadd "$expl[@]" - ${(@f)$(_call_program pod kubectl get pod -o name)#pod/##} && ret=0
       ;;
 esac
 
 return ret
-
