@@ -161,23 +161,26 @@ def main(args):
 
         if hasfailure(jeez['status']['initContainerStatuses']) or hasfailure(
                 jeez['status']['containerStatuses']):
+            colour = 'red'
             header += f"{colourText('FAIL', 'red')}"
         elif (cnt_allcontainers + cnt_allicontainers) != (
                 cnt_failcontainers + cnt_failicontainers):
             header += f"{colourText('RUNNING', 'blue')}"
         else:
             header += f"{colourText('SUCCESS', 'green')}"
-        header += " "
-
-        header += f"{colourText('InCnt', 'cyan')}: {cnt_failicontainers}/{cnt_allicontainers} "
-        header += f"{colourText('Cnt', 'cyan')}: {cnt_failcontainers}/{cnt_allcontainers}"
 
         print(header + "\n")
 
-        print("⛩️  Init Containers: ")
+        s = f"{cnt_failicontainers}/{cnt_allicontainers}"
+        colour = cnt_failicontainers != cnt_allicontainers and 'red' or 'green'
+        ss = f"⛩️  Init Containers: {colourText(s, colour)}"
+        print(ss)
         overcnt(jeez['status']['initContainerStatuses'], kctl, pod, args)
         print()
-        print("🛍️  Containers: ")
+        s = f"{cnt_failcontainers}/{cnt_allcontainers}"
+        colour = cnt_failcontainers != cnt_allcontainers and 'red' or 'green'
+        print(f"🛍️  Containers: {colourText(s, colour)}")
+
         overcnt(jeez['status']['containerStatuses'], kctl, pod, args)
         if len(args.pod) > 1:
             print()
