@@ -85,28 +85,6 @@ def overcnt(jeez, kctl, pod, args):
                 print()
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument("pod", nargs="*", default="")
-parser.add_argument('-n', dest="namespace", type=str)
-parser.add_argument(
-    '-r',
-    '--restrict',
-    type=str,
-    help='Restrict to show only those containers (regexp)')
-
-parser.add_argument(
-    '-l',
-    '--showlog',
-    action='store_true',
-    default=False,
-    help='Show logs of containers')
-parser.add_argument(
-    '--maxlines',
-    type=str,
-    default="-1",
-    help='Maximum line when showing logs')
-
-
 def main(args):
     kctl = 'kubectl'
     if args.namespace:
@@ -187,4 +165,25 @@ def main(args):
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("pod", nargs="*", default="")
+    parser.add_argument('-n', dest="namespace", type=str)
+    parser.add_argument(
+        '-r',
+        '--restrict',
+        type=str,
+        help='Restrict to show only those containers (regexp)')
+
+    parser.add_argument(
+        '-l',
+        '--showlog',
+        action='store_true',
+        default=False,
+        help='Show logs of containers')
+    parser.add_argument(
+        '--maxlines',
+        type=str,
+        default="-1",
+        help='Maximum line when showing logs')
+
     main(parser.parse_args(sys.argv[1:]))
