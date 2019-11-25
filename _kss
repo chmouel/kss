@@ -3,7 +3,16 @@ local ret=1 state
 local -a namespace pods
 local kubectl=kubectl
 
-args=(
+(( $+functions[_kss_cache_policy] )) ||
+_kss_cache_policy () {
+  typeset -a old
+
+  # cache is valid for 5mn
+  old=( "$1"(mm+5) )
+  (( $#old ))
+}
+
+local args=(
     {-h,--help}'[display help message]' \
     {-l,--showlog}'[Show log]' \
     {-r,--restrict}'[Retrict pods to]: :' \
@@ -15,8 +24,16 @@ _arguments -S -C $args && ret=0
 
 case $state in
   namespace)
-      namespace=(${(@f)$(_call_program pod ${kubectl} get namespace -o name)#namespace/##})
-      _describe 'all namespace' namespace && ret=0
+      zstyle ":completion:${curcontext}:" cache-policy _kss_cache_policy
+      local cacheid=kubectl_namespaces
+      typeset -a namespaces
+      local namespaceflg
+      if _cache_invalid "$cacheid" || ! _retrieve_cache "$cacheid"
+      then
+          namespaces=(${(@f)$(command ${kubectl} get namespace -o name)#namespace/##})
+          _store_cache "$cacheid" namespaces
+      fi
+      _describe 'all namespace' namespaces && ret=0
       ;;
   pods)
       for (( i = 1; i <= $#words - 1; i++ )); do
