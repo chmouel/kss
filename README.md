@@ -1,6 +1,6 @@
 # KSS - Kubernetes pod status on steroid 💉
 
-A simple tool to show the current status of a pod and its associated `containers` and `initContainers`. 
+A simple tool to show the current status of a pod and its associated `containers` and `initContainers`.
 
 This was developed out of frustration with `kubectl get pod` not showing much and `kubectl describe pod` showing way too much in a cryptic way. Debugging failed pods with a lot of `initContainers` and `sideCars` usually was done with `kubectl get pod -o yaml |less` wiht a lot of going up and down and a bunch of censored swearing 🔞. All those techniques for introspection and debugging are still useful and **KSS** is not planning to fully replace them but now thanks to it I swear less and my sanity is back 😅.
 
@@ -16,7 +16,7 @@ You can use the `-r` option if you would like to restrict it to only some contai
 
 ## Install
 
-You just make sure you have >=Python3.6, [fzf](https://github.com/junegunn/fzf) and kubectl. You then can download the [script](https://raw.githubusercontent.com/chmouel/kss/master/kss) and put it directly into your `PATH` or checkout this GIT repo and link the binary into your path so you can have do some git pull to get the updates. 
+You just make sure you have >=Python3.6, [fzf](https://github.com/junegunn/fzf) and kubectl. You then can download the [script](https://raw.githubusercontent.com/chmouel/kss/master/kss) and put it directly into your `PATH` or checkout this GIT repo and link the binary into your path so you can have do some git pull to get the updates.
 
 With zsh you can install the [_kss](./_kss) completionfile  to your [fpath](https://unix.stackexchange.com/a/33898).
 
@@ -42,7 +42,7 @@ I may do a [krew](https://github.com/kubernetes-sigs/krew) plugin and/or brew ho
 
 ### Selecting a pod with fzf
 
-[![Select a pod with FZF](https://asciinema.org/a/WNBiFbv0ExwPFsqPP9lvEx0SY.png)](https://asciinema.org/a/WNBiFbv0ExwPFsqPP9lvEx0SY)
+[![Select a pod with FZF](https://asciinema.org/a/xOCUspvH0z5R2y56jtN32Xk6G.png)](https://asciinema.org/a/xOCUspvH0z5R2y56jtN32Xk6G)
 
 
 ## Misc
