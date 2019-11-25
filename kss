@@ -88,6 +88,9 @@ def overcnt(jeez, kctl, pod, args):
 def lensc(jeez):
     s = 0
     for i in jeez:
+        if 'waiting' in i['state'] and i['state']['waiting'][
+                'reason'] == 'ImagePullBackOff':
+            s += 1
         if 'terminated' in i['state'] and \
            i['state']['terminated']['exitCode'] == 0:
             s += 1
@@ -96,6 +99,10 @@ def lensc(jeez):
 
 def hasfailure(jeez):
     for i in jeez:
+
+        if 'waiting' in i['state'] and i['state']['waiting'][
+                'reason'] == 'ImagePullBackOff':
+            return True
         if 'terminated' in i['state'] and \
            i['state']['terminated']['exitCode'] != 0:
             return True
