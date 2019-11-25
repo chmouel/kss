@@ -1,4 +1,4 @@
-# KSS - Kubernetes pod status on steroid
+# KSS - Kubernetes pod status on steroid 💉
 
 A simple tool to show the current status of a pod and its associated `containers` and `initContainers`. 
 
