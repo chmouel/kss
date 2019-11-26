@@ -16,11 +16,29 @@ You can use the `-r` option if you would like to restrict it to only some contai
 
 ## Install
 
+### Packages
+
+#### Homebrew
+
+You can install **KSS** latest with homebrew, you just have to fire up those
+commands in your shell and **KSS* and its zsh completions will be installed :
+
+```shell
+brew tap chmouel/kss
+brew install kss
+```
+
+(This hasn't been tested on `linuxbrews` but this should works)
+
+### Manual install
+
 You just make sure you have >=Python3.6, [fzf](https://github.com/junegunn/fzf) and kubectl. You then can download the [script](https://raw.githubusercontent.com/chmouel/kss/master/kss) and put it directly into your `PATH` or checkout this GIT repo and link the binary into your path so you can have do some git pull to get the updates.
 
 With zsh you can install the [_kss](./_kss) completionfile  to your [fpath](https://unix.stackexchange.com/a/33898).
 
-I may do a [krew](https://github.com/kubernetes-sigs/krew) plugin and/or brew homebrew repository if this get requested enough. Watch this space as cool people would say 😎🏄🤙.
+### Misc
+
+I may do a [krew](https://github.com/kubernetes-sigs/krew) plugin if this get [requested](https://github.com/chmouel/kss/issues/1) enough. Watch this space as cool people would say 😎🏄🤙.
 
 ## Screenshots
 
