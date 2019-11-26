@@ -28,7 +28,7 @@ brew tap chmouel/kss
 brew install kss
 ```
 
-(This hasn't been tested on `linuxbrews` but this should works)
+This has been tested as working on [linuxbrew](https://docs.brew.sh/Homebrew-on-Linux) too.
 
 ### Manual install
 
