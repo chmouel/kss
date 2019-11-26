@@ -21,7 +21,7 @@ You can use the `-r` option if you would like to restrict it to only some contai
 #### Homebrew
 
 You can install **KSS** latest with homebrew, you just have to fire up those
-commands in your shell and **KSS* and its zsh completions will be installed :
+commands in your shell and **KSS** and its zsh completions will be installed :
 
 ```shell
 brew tap chmouel/kss
