@@ -37,8 +37,8 @@ case $state in
       ;;
   pods)
       for (( i = 1; i <= $#words - 1; i++ )); do
-          if [[ $words[$i] == -n ]]; then
-              kubectl="kubectl -n $words[$((i+1))]"
+          if [[ $words[$i] == -n || $words[$i] == --namespace  ]]; then
+              kubectl="kubectl --namespace $words[$((i+1))]"
               break
           fi
       done
