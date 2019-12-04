@@ -65,4 +65,7 @@ I may do a [krew](https://github.com/kubernetes-sigs/krew) plugin if this get [r
 
 ## Misc
 
-* The code is getting quite tortured, like some sort of spaghetti plate 🍝 with greasy meatballs 🥩 on the top, the kind of stuff you start to write quickly and dirty out of frustration to fix a problem and it grows it grows until it really become an unreadable beast. I probably going to rewrite it up properly with tests and all (in a compiled language perhaps?) soonish enough. But hey who cares, since it kinda works! (until I broke it :D) 😅
+* The code is getting quite tortured, like some sort of spaghetti plate 🍝 with greasy meatballs 🥩 on the top, the kind of stuff you start to write quickly and dirty out of frustration to fix a problem and it grows it grows until it really become an unreadable beast. I probably going to rewrite it up properly with tests and all (in a compiled language perhaps?) soonish enough. 
+
+And I actually did start rewritting the whole thing proper, with a bunch of testcases, nice code and all with all the best practices and all. Starting to write my testcases I realise there is so many crazy edge cases and different status in Kubernetes that would have been getting longer than I tought, so let's say for now that KSS has a i in between and we will keep it "[KISS](https://en.wikipedia.org/wiki/KISS_principle)"
+But hey who cares, since it kinda works! (until I broke it :D) 😅
