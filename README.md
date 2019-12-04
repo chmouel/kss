@@ -2,15 +2,15 @@
 
 A simple tool to show the current status of a pod and its associated `containers` and `initContainers`.
 
-This was developed out of frustration with `kubectl get pod` not showing much and `kubectl describe pod` showing way too much in a cryptic way. Debugging failed pods with a lot of `initContainers` and `sideCars` usually was done with `kubectl get pod -o yaml |less` wiht a lot of going up and down and a bunch of censored swearing 🔞. All those techniques for introspection and debugging are still useful and **KSS** is not planning to fully replace them but now thanks to it I swear less and my sanity is back 😅.
+This was developed out of frustration with `kubectl get pod` not showing much and `kubectl describe pod` showing way too much in a cryptic way. Debugging failed pods with a lot of `initContainers` and `sideCars` usually was done with `kubectl get pod -o yaml |less` with a lot of going up and down over a pager to figure out what's going on and a bunch of swearing 🔞. All those techniques for introspection and debugging are still useful and **KSS** is not planning to fully replace them but now thanks to it you can see quickly what happen and what fails and get your saninty back 😅.
 
 ## Usage
 
-You can specify a pod or multiple ones as argument to **KSS**, if you don't it will launch [fzf](https://github.com/junegunn/fzf) and let you choose the pod interactively, if there is only one pod available it will select it automatically. If you would like to choose multiple pods you can use the key [TAB]  and select them, **KSS** would then show all of them.
+You can specify a pod or multiple ones as argument to **KSS**, if you don't it will launch the lovely [fzf](https://github.com/junegunn/fzf) and let you choose the pod interactively, if there is only one pod available it will select it automatically. If you would like to choose multiple pods you can use the key [TAB]  and select them, **KSS** will then show them all.
 
-**KSS** shows a preview when running with fzf, it will preview with itself if it can find itself in the `PATH`, if not it will fallback to a good ol' boring `kubectl describe` 👴🏼👵🏻.
+**KSS** shows a preview when running with fzf, it will try to do the preview with itself if it cannot find itself in the `PATH` it will fallback to a good ol' and boring `kubectl describe` 👴🏼👵🏻.
 
-If you add the `-l` option it will show you the output log of the container, you can adjust how many lines of the log you want to see if you add the flag `--maxlines=INT`.
+If you add the `-l` option it will show you the log output of the container, you can adjust how many lines of the log you want to see if you add the flag `--maxlines=INT`.
 
 You can use the `-r` option if you would like to restrict it to only some containers, it accepts a regexp as an argument, so you can do some fancy matching in there. You would typically use this flag combined when you are outputting the container's log (`-l`).
 
@@ -28,7 +28,7 @@ brew tap chmouel/kss
 brew install kss
 ```
 
-(This hasn't been tested on `linuxbrews` but this should works)
+This has been tested as working on [linuxbrew](https://docs.brew.sh/Homebrew-on-Linux) too.
 
 ### Manual install
 
