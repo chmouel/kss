@@ -24,19 +24,14 @@ import os
 def colourText(text, color):
     colours = {
         'red': "\033[1;31m",
-        'title': "\033[4;40m",
         'yellow': "\033[1;33m",
         'blue': "\033[1;34m",
-        'blue_reverse': "\033[1;44m",
         'cyan': "\033[1;36m",
-        'cyan_surligned': "\033[4;36m",
         'cyan_italic': "\033[3;37m",
         'green': "\033[1;32m",
         'grey': "\033[1;30m",
-        'magenta_surligned': "\033[4;35m",
         'magenta': "\033[1;35m",
         'white': "\033[1;37m",
-        'white_bold': "\033[1;40m",
         'reset': "\033[0;0m",
     }
     s = f"{colours[color]}{text}{colours['reset']}"
@@ -72,7 +67,7 @@ def overcnt(jeez, kctl, pod, args):
                 state + "    " + container['state']['waiting']['reason'],
                 "grey")
 
-        cname = colourText(container['name'], 'white_bold')
+        cname = colourText(container['name'], 'white')
 
         line_new = ' {:60}  {:>20}'.format(cname, state)
         print(line_new)
