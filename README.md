@@ -30,6 +30,12 @@ brew install kss
 
 This has been tested as working on [linuxbrew](https://docs.brew.sh/Homebrew-on-Linux) too.
 
+#### Arch
+
+It's available on Arch AUR [here](https://aur.archlinux.org/packages/kss).
+
+Install it with your favourite aur installer (i.e: [yay](https://github.com/Jguer/yay))
+
 ### Manual install
 
 You just make sure you have >=Python3.6, [fzf](https://github.com/junegunn/fzf) and kubectl. You then can download the [script](https://raw.githubusercontent.com/chmouel/kss/master/kss) and put it directly into your `PATH` or checkout this GIT repo and link the binary into your path so you can have do some git pull to get the updates.
@@ -65,7 +71,7 @@ I may do a [krew](https://github.com/kubernetes-sigs/krew) plugin if this get [r
 
 ## Misc
 
-* The code is getting quite tortured, like some sort of spaghetti plate 🍝 with greasy meatballs 🥩 on the top, the kind of stuff you start to write quickly and dirty out of frustration to fix a problem and it grows it grows until it really become an unreadable beast. I probably going to rewrite it up properly with tests and all (in a compiled language perhaps?) soonish enough. 
+* The code is getting quite tortured, like some sort of spaghetti plate 🍝 with greasy meatballs 🥩 on the top, the kind of stuff you start to write quickly and dirty out of frustration to fix a problem and it grows it grows until it really become an unreadable beast. I probably going to rewrite it up properly with tests and all (in a compiled language perhaps?) soonish enough.
 
 And I actually did start rewritting the whole thing proper, with a bunch of testcases, nice code and all with all the best practices and all. Starting to write my testcases I realise there is so many crazy edge cases and different status in Kubernetes that would have been getting longer than I tought, so let's say for now that KSS has a i in between and we will keep it "[KISS](https://en.wikipedia.org/wiki/KISS_principle)"
 But hey who cares, since it kinda works! (until I broke it :D) 😅
