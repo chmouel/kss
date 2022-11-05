@@ -8,11 +8,9 @@ set -x
 
 curl -f -H "Authorization: $(pass show github/chmouel-token)" https://api.github.com/repos/chmouel/kss/releases  > ${TMP}
 
-tarball=$(jq -r '.[0].tarball_url' ${TMP})
-[[ -z ${tarball} ]] && { echo "no tarball found??"; exit 1;}
-
 version=$(jq -r '.[0].tag_name' ${TMP})
 [[ -z ${version} ]] && { echo "no version found??"; exit 1;}
+tarball=https://codeload.github.com/chmouel/kss/legacy.tar.gz/refs/tags/${version}
 curl -H"Authorization: $(pass show github/chmouel-token)"  -# -o ${TMP} ${tarball}
 
 shasum=$(sha256sum ${TMP}|cut -d" " -f1)
