@@ -2,7 +2,7 @@
 class Kss < Formula
   desc "Kubernetes pod status on steroid 💉"
   homepage "https://github.com/chmouel/kss"
-  version "0.2.0"
+  version "0.2.1"
 
   depends_on "fzf"
   depends_on "kubectl"
