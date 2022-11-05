@@ -26,7 +26,7 @@ You can install **KSS** latest with homebrew, you just have to fire up those
 commands in your shell and **KSS** and its zsh completions will be installed :
 
 ```shell
-brew tap chmouel/kss
+brew tap chmouel/kss https://github.com/chmouel/kss
 brew install kss
 ```
 

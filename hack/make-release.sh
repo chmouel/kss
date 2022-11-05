@@ -1,9 +1,5 @@
 #!/usr/bin/env bash
 set -euf
-[[ $(uname) == "Darwin" ]] && {
-    echo "this is not going to work on osx"
-    exit 1
-}
 current=$(git describe --tags $(git rev-list --tags --max-count=1))
 VERSION=${1-""}
 [[ -z ${VERSION} ]] && { 
@@ -32,4 +28,5 @@ git tag -s ${VERSION} -m "Releasing version ${VERSION}"
 git push --tags origin ${VERSION}
 gh release create ${VERSION} --notes "Release ${VERSION} 🥳"
 
-./hack/aur/build.sh ${VERSION}
+[[ $(uname) != "Darwin" ]] && ./hack/aur/build.sh ${VERSION}
+./hack/update-homebrew-formula.sh
