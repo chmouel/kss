@@ -2,7 +2,7 @@
 
 A simple tool to show the current status of a pod and its associated `containers` and `initContainers`.
 
-This was developed out of frustration with `kubectl get pod` not showing much and `kubectl describe pod` showing way too much in a cryptic way. Debugging failed pods with a lot of `initContainers` and `sideCars` usually was done with `kubectl get pod -o yaml |less` with a lot of going up and down over a pager to figure out what's going on and a bunch of swearing 🔞. All those techniques for introspection and debugging are still useful and **KSS** is not planning to fully replace them but now thanks to it you can see quickly what happen and what fails and get your saninty back 😅.
+This was developed out of frustration with `kubectl get pod` not showing much and `kubectl describe pod` showing way too much in a cryptic way. Debugging failed pods with a lot of `initContainers` and `sideCars` usually was done with `kubectl get pod -o yaml |less` with a lot of going up and down over a pager to figure out what's going on and a bunch of swearing 🔞. All those techniques for introspection and debugging are still useful and **KSS** is not planning to fully replace them but now thanks to it you can see quickly what happen and what fails and get your sanity back 😅.
 
 ## Usage
 
@@ -13,6 +13,8 @@ You can specify a pod or multiple ones as argument to **KSS**, if you don't it w
 If you add the `-l` option it will show you the log output of the container, you can adjust how many lines of the log you want to see if you add the flag `--maxlines=INT`.
 
 You can use the `-r` option if you would like to restrict it to only some containers, it accepts a regexp as an argument, so you can do some fancy matching in there. You would typically use this flag combined when you are outputting the container's log (`-l`).
+
+With the `-L` flag you will display the labels and with the `-A` flag you will do the same but for annotations.
 
 ## Install
 

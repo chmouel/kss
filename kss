@@ -23,16 +23,16 @@ import os
 
 def colourText(text, color):
     colours = {
-        'red': "\033[1;31m",
-        'yellow': "\033[1;33m",
-        'blue': "\033[1;34m",
-        'cyan': "\033[1;36m",
-        'cyan_italic': "\033[3;37m",
-        'green': "\033[1;32m",
-        'grey': "\033[1;30m",
-        'magenta': "\033[1;35m",
-        'white': "\033[1;37m",
-        'reset': "\033[0;0m",
+        "red": "\033[1;31m",
+        "yellow": "\033[1;33m",
+        "blue": "\033[1;34m",
+        "cyan": "\033[1;36m",
+        "cyan_italic": "\033[3;37m",
+        "green": "\033[1;32m",
+        "grey": "\033[1;30m",
+        "magenta": "\033[1;35m",
+        "white": "\033[1;37m",
+        "reset": "\033[0;0m",
     }
     s = f"{colours[color]}{text}{colours['reset']}"
     return s
@@ -41,7 +41,8 @@ def colourText(text, color):
 def show_log(kctl, args, container, pod):
     cmd = "%s logs --tail=%s %s -c%s" % (kctl, args.maxlines, pod, container)
     lastlog = subprocess.run(
-        cmd.split(" "), stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        cmd.split(" "), stderr=subprocess.PIPE, stdout=subprocess.PIPE
+    )
     if lastlog.returncode != 0:
         print("i could not run '%s'" % (cmd))
         sys.exit(1)
@@ -51,29 +52,29 @@ def show_log(kctl, args, container, pod):
 def overcnt(jeez, kctl, pod, args):
     for container in jeez:
         if args.restrict:
-            if len(re.findall(args.restrict, container['name'])) == 0:
+            if len(re.findall(args.restrict, container["name"])) == 0:
                 continue
 
-        state = list(container['state'].keys())[0].capitalize()
+        state = list(container["state"].keys())[0].capitalize()
         if state in "Running":
             state = colourText(state, "blue")
         elif state == "Terminated":
-            if container['state']['terminated']['exitCode'] != 0:
+            if container["state"]["terminated"]["exitCode"] != 0:
                 state = colourText("FAIL", "red")
             else:
                 state = colourText("SUCCESS", "green")
         elif state == "Waiting":
             state = colourText(
-                state + "    " + container['state']['waiting']['reason'],
-                "grey")
+                state + "    " + container["state"]["waiting"]["reason"], "grey"
+            )
 
-        cname = colourText(container['name'], 'white')
+        cname = colourText(container["name"], "white")
 
-        line_new = ' {:60}  {:>20}'.format(cname, state)
+        line_new = " {:60}  {:>20}".format(cname, state)
         print(line_new)
 
         if args.showlog:
-            outputlog = show_log(kctl, args, container['name'], pod)
+            outputlog = show_log(kctl, args, container["name"], pod)
             if outputlog:
                 print()
                 print(outputlog)
@@ -83,11 +84,12 @@ def overcnt(jeez, kctl, pod, args):
 def lensc(jeez):
     s = 0
     for i in jeez:
-        if 'waiting' in i['state'] and i['state']['waiting'][
-                'reason'] == 'ImagePullBackOff':
+        if (
+            "waiting" in i["state"]
+            and i["state"]["waiting"]["reason"] == "ImagePullBackOff"
+        ):
             s += 1
-        if 'terminated' in i['state'] and \
-           i['state']['terminated']['exitCode'] == 0:
+        if "terminated" in i["state"] and i["state"]["terminated"]["exitCode"] == 0:
             s += 1
     return s
 
@@ -95,25 +97,26 @@ def lensc(jeez):
 def hasfailure(jeez):
     for i in jeez:
 
-        if 'waiting' in i['state'] and i['state']['waiting'][
-                'reason'] == 'ImagePullBackOff':
+        if (
+            "waiting" in i["state"]
+            and i["state"]["waiting"]["reason"] == "ImagePullBackOff"
+        ):
             return True
-        if 'terminated' in i['state'] and \
-           i['state']['terminated']['exitCode'] != 0:
+        if "terminated" in i["state"] and i["state"]["terminated"]["exitCode"] != 0:
             return True
     return False
 
 
 def getstatus(hasfailures, allc, allf):
     if hasfailures:
-        colour = 'red'
-        text = 'FAIL'
+        colour = "red"
+        text = "FAIL"
     elif allc != allf:
-        colour = 'blue'
-        text = 'RUNNING'
+        colour = "blue"
+        text = "RUNNING"
     else:
-        colour = 'green'
-        text = 'SUCCESS'
+        colour = "green"
+        text = "SUCCESS"
     return (colour, text)
 
 
@@ -136,30 +139,39 @@ def which(program):
     return None
 
 
+def print_labels_annotations(jeez, key, label):
+    labels = [
+        f"  {colourText(v[0], 'white')}: {v[1]}"
+        for v in jeez["metadata"][key].items()
+        if v
+    ]
+    print(f"{colourText(label, 'cyan')}: ")
+    print("\n".join(labels))
+    print()
+
+
 def main(args):
-    kctl = 'kubectl'
+    kctl = "kubectl"
     if args.namespace:
         kctl += f" -n {args.namespace}"
 
-    myself = which('kss')
+    myself = which("kss")
     if myself:
-        preview = f'{myself}'
-        if args.namespace:
-            preview += f' -n {args.namespace}'
-        preview += ' {}'
+        preview = f"{myself}"
+        preview += f" { '-n ' + args.namespace if args.namespace else ''} {'-A' if args.annotations else ''} {'-L' if args.labels else ''}"
+        preview += " {}"
     else:
-        preview = f'{kctl} describe {{}}'
+        preview = f"{kctl} describe {{}}"
 
     if not args.pod:
         runcmd = f"{kctl} get pods -o name|fzf -0 -n 1 -m -1 --preview='{preview}'"
-        args.pod = os.popen(runcmd).read().strip().replace("pod/",
-                                                           "").split("\n")
+        args.pod = os.popen(runcmd).read().strip().replace("pod/", "").split("\n")
     elif len(args.pod) == 1:
         runcmd = f"{kctl} get pods -o name|fzf -0 -n 1 -m -1 -q '{args.pod[0]}' --preview='{preview}'"
         args.pod = [os.popen(runcmd).read().strip().replace("pod/", "")]
 
     if not args.pod or not args.pod[0]:
-        print("No pods is no news which is arguably no worries. 🤷🏼‍♂️🤷🏻‍♀️")
+        print("No pods is no news which is arguably no worries.")
         sys.exit(1)
 
     for pod in args.pod:
@@ -170,7 +182,8 @@ def main(args):
             # "cat /tmp/a.json".split(" "),
             cmdline.split(" "),
             stderr=subprocess.PIPE,
-            stdout=subprocess.PIPE)
+            stdout=subprocess.PIPE,
+        )
         if shell.returncode != 0:
             print("The was some problem running '%s'" % (cmdline))
             sys.exit(1)
@@ -178,68 +191,94 @@ def main(args):
         output = shell.stdout.decode().strip()
         jeez = json.loads(output)
 
-        if 'initContainerStatuses' not in jeez['status']:
-            jeez['status']['initContainerStatuses'] = {}
+        if "initContainerStatuses" not in jeez["status"]:
+            jeez["status"]["initContainerStatuses"] = {}
 
-        cnt_failicontainers = lensc(jeez['status']['initContainerStatuses'])
-        cnt_allicontainers = len(jeez['status']['initContainerStatuses'])
-        cnt_failcontainers = lensc(jeez['status']['containerStatuses'])
-        cnt_allcontainers = len(jeez['status']['containerStatuses'])
+        cnt_failicontainers = lensc(jeez["status"]["initContainerStatuses"])
+        cnt_allicontainers = len(jeez["status"]["initContainerStatuses"])
+        cnt_failcontainers = lensc(jeez["status"]["containerStatuses"])
+        cnt_allcontainers = len(jeez["status"]["containerStatuses"])
 
-        header = f"👉 {colourText('Pod', 'cyan')}: {pod} "
+        header = f"{colourText('Pod', 'cyan')}: {pod}\n"
         header += f"{colourText('Status', 'cyan')}: "
 
         colour, text = getstatus(
-            hasfailure(jeez['status']['initContainerStatuses'])
-            or hasfailure(jeez['status']['containerStatuses']),
+            hasfailure(jeez["status"]["initContainerStatuses"])
+            or hasfailure(jeez["status"]["containerStatuses"]),
             cnt_allcontainers + cnt_allicontainers,
-            cnt_failcontainers + cnt_failicontainers)
+            cnt_failcontainers + cnt_failicontainers,
+        )
         header += f"{colourText(text, colour)}"
 
-        print(header + "\n")
+        print(header)
 
-        if jeez['status']['initContainerStatuses']:
+        if args.labels:
+            print_labels_annotations(jeez, "labels", "Labels")
+        if args.annotations:
+            print_labels_annotations(jeez, "annotations", "Annotations")
+
+        if jeez["status"]["initContainerStatuses"]:
             colour, _ = getstatus(
-                hasfailure(jeez['status']['initContainerStatuses']),
-                cnt_allicontainers, cnt_failicontainers)
+                hasfailure(jeez["status"]["initContainerStatuses"]),
+                cnt_allicontainers,
+                cnt_failicontainers,
+            )
             s = f"{cnt_failicontainers}/{cnt_allicontainers}"
-            print(f"⛩️  Init Containers: {colourText(s, colour)}")
-            overcnt(jeez['status']['initContainerStatuses'], kctl, pod, args)
+            print(f"{colourText('Init Containers', 'cyan')}: {colourText(s, colour)}")
+            overcnt(jeez["status"]["initContainerStatuses"], kctl, pod, args)
             print()
 
         colour, text = getstatus(
-            hasfailure(jeez['status']['containerStatuses']), cnt_allcontainers,
-            cnt_failcontainers)
-        if text == 'RUNNING':
+            hasfailure(jeez["status"]["containerStatuses"]),
+            cnt_allcontainers,
+            cnt_failcontainers,
+        )
+        if text == "RUNNING":
             s = cnt_allcontainers
         else:
             s = f"{cnt_failcontainers}/{cnt_allcontainers}"
-        print(f"🛍️  Containers: {colourText(s, colour)}")
-        overcnt(jeez['status']['containerStatuses'], kctl, pod, args)
+        print(f"{colourText('Containers', 'cyan')}: {colourText(s, colour)}")
+        overcnt(jeez["status"]["containerStatuses"], kctl, pod, args)
         if len(args.pod) > 1:
             print()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("pod", nargs="*", default="")
-    parser.add_argument('-n', '--namespace', dest="namespace", type=str)
+    parser.add_argument("-n", "--namespace", dest="namespace", type=str)
     parser.add_argument(
-        '-r',
-        '--restrict',
+        "-r",
+        "--restrict",
         type=str,
-        help='Restrict to show only those containers (regexp)')
+        help="Restrict to show only those containers (regexp)",
+    )
 
     parser.add_argument(
-        '-l',
-        '--showlog',
-        action='store_true',
+        "--labels",
+        "-L",
+        action="store_true",
         default=False,
-        help='Show logs of containers')
+        help="Show labels",
+    )
+
     parser.add_argument(
-        '--maxlines',
-        type=str,
-        default="-1",
-        help='Maximum line when showing logs')
+        "--annotations",
+        "-A",
+        action="store_true",
+        default=False,
+        help="Show Annotations",
+    )
+
+    parser.add_argument(
+        "-l",
+        "--showlog",
+        action="store_true",
+        default=False,
+        help="Show logs of containers",
+    )
+    parser.add_argument(
+        "--maxlines", type=str, default="-1", help="Maximum line when showing logs"
+    )
 
     main(parser.parse_args(sys.argv[1:]))
