@@ -15,6 +15,8 @@ _kss_cache_policy () {
 local args=(
     {-h,--help}'[display help message]' \
     {-l,--showlog}'[Show log]' \
+    {-A,--annotations}'[Show annotations]' \
+    {-L,--labels}'[Show labels]' \
     {-r,--restrict}'[Retrict pods to]: :' \
     {-n,--namespace}'[Use namespace]:Use namespace:->namespace' \
     '*:pods:->pods'
