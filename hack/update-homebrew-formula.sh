@@ -19,4 +19,4 @@ shasum=$(sha256sum ${TMP}|cut -d" " -f1)
 sed -i "s/sha256 \".*\"/sha256 \"${shasum}\"/;s/version \".*\"/version \"${version}\"/" ../Formula/kss.rb
 
 git commit ../Formula/kss.rb -m "Update for ${version}"
-git push origin main --no-verify
+git push origin master --no-verify
