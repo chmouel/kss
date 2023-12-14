@@ -73,7 +73,8 @@ def overcnt(jeez, kctl, pod, args):
             reason = container["state"]["waiting"]["reason"]
             if reason in failed_containers:
                 state = colourText(reason, "red")
-                errmsg = container["lastState"]["terminated"]["message"]
+                if "message" in container["lastState"]["terminated"]:
+                    errmsg = container["lastState"]["terminated"]["message"]
             else:
                 state = colourText(state + "    " + reason, "yellow")
 
