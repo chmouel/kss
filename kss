@@ -85,7 +85,8 @@ def overcnt(jeez, kctl, pod, args):
         if args.showlog:
             if errmsg:
                 print()
-                print(colourText("Crash message for %s:" % (cname), "cyan"))
+                print(colourText(" Crash message for %s:" % (cname), "cyan"))
+                print(colourText(("-" * 80), "magenta"))
                 print(errmsg)
                 print(colourText(("-" * 80), "magenta"))
                 print()
@@ -93,7 +94,8 @@ def overcnt(jeez, kctl, pod, args):
                 outputlog = show_log(kctl, args, container["name"], pod)
                 if outputlog:
                     print()
-                    print(colourText("Logs for %s:" % (cname), "cyan"))
+                    print(colourText(" Logs for %s:" % (cname), "cyan"))
+                    print(colourText(("-" * 80), "magenta"))
                     print(outputlog)
                     print(colourText(("-" * 80), "magenta"))
                     print()
