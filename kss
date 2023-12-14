@@ -20,6 +20,11 @@ import re
 import subprocess
 import sys
 
+failed_containers = (
+    "ImagePullBackOff",
+    "CrashLoopBackOff",
+)
+
 
 def colourText(text, color):
     colours = {
@@ -51,6 +56,7 @@ def show_log(kctl, args, container, pod):
 
 def overcnt(jeez, kctl, pod, args):
     for container in jeez:
+        errmsg = ""
         if args.restrict:
             if len(re.findall(args.restrict, container["name"])) == 0:
                 continue
@@ -64,9 +70,12 @@ def overcnt(jeez, kctl, pod, args):
             else:
                 state = colourText("SUCCESS", "green")
         elif state == "Waiting":
-            state = colourText(
-                state + "    " + container["state"]["waiting"]["reason"], "grey"
-            )
+            reason = container["state"]["waiting"]["reason"]
+            if reason in failed_containers:
+                state = colourText(reason, "red")
+                errmsg = container["lastState"]["terminated"]["message"]
+            else:
+                state = colourText(state + "    " + reason, "yellow")
 
         cname = colourText(container["name"], "white")
 
@@ -74,11 +83,16 @@ def overcnt(jeez, kctl, pod, args):
         print(line_new)
 
         if args.showlog:
-            outputlog = show_log(kctl, args, container["name"], pod)
-            if outputlog:
+            if errmsg:
                 print()
-                print(outputlog)
+                print(errmsg)
                 print()
+            else:
+                outputlog = show_log(kctl, args, container["name"], pod)
+                if outputlog:
+                    print()
+                    print(outputlog)
+                    print()
 
 
 def lensc(jeez):
@@ -86,7 +100,7 @@ def lensc(jeez):
     for i in jeez:
         if (
             "waiting" in i["state"]
-            and i["state"]["waiting"]["reason"] == "ImagePullBackOff"
+            and i["state"]["waiting"]["reason"] in failed_containers
         ):
             s += 1
         if "terminated" in i["state"] and i["state"]["terminated"]["exitCode"] == 0:
@@ -98,7 +112,7 @@ def hasfailure(jeez):
     for i in jeez:
         if (
             "waiting" in i["state"]
-            and i["state"]["waiting"]["reason"] == "ImagePullBackOff"
+            and i["state"]["waiting"]["reason"] in failed_containers
         ):
             return True
         if "terminated" in i["state"] and i["state"]["terminated"]["exitCode"] != 0:
