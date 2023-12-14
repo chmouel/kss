@@ -2,13 +2,13 @@
 class Kss < Formula
   desc "Kubernetes pod status on steroid 💉"
   homepage "https://github.com/chmouel/kss"
-  version "0.3.0"
+  version "0.4.0"
 
   depends_on "fzf"
   depends_on "kubectl"
 
   url "https://github.com/chmouel/kss/tarball/#{version}"
-  sha256 "91fdd89c4c690b43dd80f68ab255aa0dc81ad0f4cb3dcf26905f0484a426b8ea"
+  sha256 "08453cac989ad58c28eb4e3ba3cb68b9ebfeec4304cda26ac76ae4efc01bb088"
 
   def install
     bin.install "kss" => "kss"
