@@ -37,6 +37,7 @@ def colourText(text, color):
         "grey": "\033[0;30m",
         "magenta": "\033[0;35m",
         "white": "\033[0;37m",
+        "white_bold": "\033[1;37m",
         "reset": "\033[0;0m",
     }
     s = f"{colours[color]}{text}{colours['reset']}"
@@ -146,7 +147,7 @@ def which(program):
     def is_exe(fpath):
         return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
 
-    fpath, fname = os.path.split(program)
+    fpath, _ = os.path.split(program)
     if fpath:
         if is_exe(program):
             return program
@@ -183,12 +184,13 @@ def main(args):
     else:
         preview = f"{kctl} describe {{}}"
 
-    if not args.pod:
-        runcmd = f"{kctl} get pods -o name|fzf -0 -n 1 -m -1 --preview='{preview}'"
-        args.pod = os.popen(runcmd).read().strip().replace("pod/", "").split("\n")
-    elif len(args.pod) == 1:
-        runcmd = f"{kctl} get pods -o name|fzf -0 -n 1 -m -1 -q '{args.pod[0]}' --preview='{preview}'"
-        args.pod = [os.popen(runcmd).read().strip().replace("pod/", "")]
+    query_args = ""
+    if args.pod:
+        query_args = f"-q '{' '.join(args.pod)}'"
+    runcmd = (
+        f"{kctl} get pods -o name|fzf -0 -n 1 -m -1 {query_args} --preview='{preview}'"
+    )
+    args.pod = os.popen(runcmd).read().strip().replace("pod/", "").split("\n")
 
     if not args.pod or not args.pod[0]:
         print("No pods is no news which is arguably no worries.")
@@ -259,6 +261,17 @@ def main(args):
             s = f"{cnt_failcontainers}/{cnt_allcontainers}"
         print(f"{colourText('Containers', 'cyan')}: {colourText(s, colour)}")
         overcnt(jeez["status"]["containerStatuses"], kctl, pod, args)
+
+        if args.events:
+            print(colourText("Events", "cyan"))
+            cmd = f"kubectl get events --field-selector involvedObject.name={pod} --field-selector involvedObject.kind=Pod"
+            output = os.popen(cmd).read().strip()
+            output = "\n".join(["  " + i for i in output.split("\n")])
+            output = "\n".join(
+                [colourText(output.split("\n")[0], "white_bold")]
+                + output.split("\n")[1:]
+            )
+            print(output)
         if len(args.pod) > 1:
             print()
 
@@ -272,6 +285,14 @@ if __name__ == "__main__":
         "--restrict",
         type=str,
         help="Restrict to show only those containers (regexp)",
+    )
+
+    parser.add_argument(
+        "--events",
+        "-E",
+        action="store_true",
+        default=False,
+        help="Show events",
     )
 
     parser.add_argument(
