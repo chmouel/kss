@@ -74,8 +74,19 @@ def overcnt(jeez, kctl, pod, args):
             reason = container["state"]["waiting"]["reason"]
             if reason in failed_containers:
                 state = colourText(reason, "red")
-                if "message" in container["lastState"]["terminated"]:
+                if (
+                    "lastState" in container
+                    and "terminated" in container["lastState"]
+                    and "message" in container["lastState"]["terminated"]
+                ):
                     errmsg = container["lastState"]["terminated"]["message"]
+                elif (
+                    "waiting" in container["state"]
+                    and "message" in container["state"]["waiting"]
+                ):
+                    errmsg = container["state"]["waiting"]["message"]
+                else:
+                    errmsg = ""
             else:
                 state = colourText(state + "    " + reason, "yellow")
 
@@ -84,23 +95,17 @@ def overcnt(jeez, kctl, pod, args):
         line_new = " {:60}  {:>20}".format(cname, state)
         print(line_new)
 
+        if errmsg:
+            print()
+            print(colourText("Error message for container %s:" % (cname), "cyan"))
+            print("\n".join(["  " + i for i in errmsg.split("\n")]))
         if args.showlog:
-            if errmsg:
+            outputlog = show_log(kctl, args, container["name"], pod)
+            if outputlog:
                 print()
-                print(colourText(" Crash message for %s:" % (cname), "cyan"))
-                print(colourText(("-" * 80), "magenta"))
-                print(errmsg)
-                print(colourText(("-" * 80), "magenta"))
+                print(colourText(" Logs for %s:" % (cname), "cyan"))
+                print("\n".join(["  " + i for i in outputlog.split("\n")]))
                 print()
-            else:
-                outputlog = show_log(kctl, args, container["name"], pod)
-                if outputlog:
-                    print()
-                    print(colourText(" Logs for %s:" % (cname), "cyan"))
-                    print(colourText(("-" * 80), "magenta"))
-                    print(outputlog)
-                    print(colourText(("-" * 80), "magenta"))
-                    print()
 
 
 def lensc(jeez):
@@ -177,19 +182,16 @@ def main(args):
         kctl += f" -n {args.namespace}"
 
     myself = which("kss")
+    preview = f"{kctl} describe {{}}"
     if myself:
         preview = f"{myself}"
         preview += f" { '-n ' + args.namespace if args.namespace else ''} {'-A' if args.annotations else ''} {'-L' if args.labels else ''}"
         preview += " {}"
-    else:
-        preview = f"{kctl} describe {{}}"
 
     query_args = ""
     if args.pod:
         query_args = f"-q '{' '.join(args.pod)}'"
-    runcmd = (
-        f"{kctl} get pods -o name|fzf -0 -n 1 -m -1 {query_args} --preview='{preview}'"
-    )
+    runcmd = f"{kctl} get pods -o name|fzf -0 -n 1 -m -1 {query_args} --preview-window 'down,75%:nowrap' --preview='{preview}'"
     args.pod = os.popen(runcmd).read().strip().replace("pod/", "").split("\n")
 
     if not args.pod or not args.pod[0]:
