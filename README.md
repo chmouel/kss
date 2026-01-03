@@ -266,6 +266,10 @@ Should the application report that "No pods is no news which is arguably no worr
 ### Events and Error Display
 <img width="1612" height="894" alt="image" src="https://github.com/user-attachments/assets/ccbead7a-c1ad-4b0a-a3ae-aa22422a1731" />
 
+### AI Analysis with the Alfred persona
+
+<img width="1751" height="1083" alt="image" src="https://github.com/user-attachments/assets/49bf1609-c768-46f7-bdbc-64aa49ce10f7" />
+
 ## Contributing
 
 Your contributions are most welcome. Should you wish to improve this tool, please feel free to submit a Pull Request.
