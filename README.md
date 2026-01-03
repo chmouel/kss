@@ -11,6 +11,8 @@ The standard `kubectl get pod` command, while functional, occasionally lacks the
 - **Refined User Interface**: Presents data with elegant color-coding, borders, and a clear visual hierarchy.
 - **Interactive Selection**: Utilizes [fzf](https://github.com/junegunn/fzf) to provide a sophisticated interactive search with live previews.
 - **Continuous Monitoring**: Offers a "Watch mode" to observe the real-time status of your deployments.
+- **Doctor Analysis**: Heuristic diagnosis for common failure modes, with log pattern detection to hasten triage.
+- **AI Explanations (Optional)**: When enabled, it consults Gemini to provide a concise diagnosis and a suggested remedy.
 - **Comprehensive Container Details**:
   - Visual status indicators (Success, Failure, Waiting).
   - Accurate age and duration metrics.
@@ -19,6 +21,7 @@ The standard `kubectl get pod` command, while functional, occasionally lacks the
   - Readiness checks.
 - **Enhanced Logging**: Displays logs with proper formatting and distinct separators for clarity.
 - **Metadata Inspection**: elegantly presents Labels and Annotations.
+- **Richer Pod Context**: Surfaces Namespace, Phase, Age, Pod IP, Node, QoS, ServiceAccount, Priority, and Conditions.
 - **Chronological Events**: Lists pod events sorted by time to aid in forensic analysis.
 - **Intelligent Error Detection**: Highlights common failure states such as `CrashLoopBackOff` or `ImagePullBackOff`.
 
@@ -47,7 +50,12 @@ Options:
   -E, --events                 List the pod's events.
   -w, --watch                  Enable watch mode for continuous monitoring.
   --watch-interval SECONDS     Set the refresh interval for watch mode (default: 2 seconds).
+  -d, --doctor                 Enable heuristic analysis (Doctor mode).
   -s, --shell                  Open an interactive shell in the selected pod.
+  --explain                    Enable AI explanation for pod failures.
+  --model MODEL                AI model to use (default: gemini-2.5-flash-lite).
+  -p, --persona PERSONA        AI persona: butler, sergeant, hacker, pirate, genz (default: random).
+  --completion SHELL           Output shell completion code (bash, zsh).
   -h, --help                   Display the help message.
 ```
 
@@ -110,6 +118,38 @@ kss my-pod -w
 # Monitor with a custom refresh interval of 5 seconds
 kss my-pod -w --watch-interval 5
 ```
+
+#### Doctor Analysis
+
+```bash
+# Enable heuristics even if the pod looks healthy
+kss my-pod -d
+```
+
+Doctor analysis also runs automatically when a container enters a failed state.
+
+#### AI Explanation
+
+```bash
+# Request Gemini's explanation (requires GEMINI_API_KEY)
+export GEMINI_API_KEY=your-token
+kss my-pod --explain
+
+# Select a persona and model
+kss my-pod --explain -p hacker --model gemini-2.5-flash
+```
+
+If you prefer a neutral, technical tone, the `hacker` persona is the best suited of the lot.
+
+Personas at a glance:
+
+| Persona | Tone |
+| --- | --- |
+| butler | Polite, formal, efficient (British butler) |
+| sergeant | Direct, demanding, no-nonsense |
+| hacker | Neutral, technical, concise |
+| pirate | Rough, nautical, a touch playful |
+| genz | Casual, slangy, emoji-friendly |
 
 #### Metadata & Events
 
@@ -177,11 +217,14 @@ kss --completion bash > /etc/bash_completion.d/kss
 kss --completion zsh > /usr/share/zsh/site-functions/_kss
 ```
 
+Completion suggestions include namespaces, pods, and persona names for your convenience.
+
 ### Prerequisites
 
 - **kubectl**: Must be installed and properly configured to communicate with your cluster.
 - **fzf**: Essential for the interactive selection feature.
 - **Go**: Required only if you intend to compile the application from source.
+- **GEMINI_API_KEY**: Required only if you wish to use `--explain` for AI-assisted diagnosis.
 
 ## Recommendations & Troubleshooting
 
