@@ -47,6 +47,7 @@ Options:
   -E, --events                 List the pod's events.
   -w, --watch                  Enable watch mode for continuous monitoring.
   --watch-interval SECONDS     Set the refresh interval for watch mode (default: 2 seconds).
+  -s, --shell                  Open an interactive shell in the selected pod.
   -h, --help                   Display the help message.
 ```
 
@@ -74,6 +75,18 @@ kss pod-1 pod-2 pod-3
 # Inspect a pod within a specific namespace
 kss -n production my-pod
 ```
+
+#### Shell Access
+
+```bash
+# Open a shell in a selected pod
+kss -s
+
+# Jump straight into a pod's shell
+kss -s my-pod
+```
+
+If the pod hosts multiple containers, KSS will courteously ask which one you wish to enter.
 
 #### Log Inspection
 

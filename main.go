@@ -4,9 +4,11 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math/rand"
 	"net/http"
 	"os"
@@ -15,6 +17,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -47,6 +50,7 @@ type Args struct {
 	WatchInterval int      // Watch refresh interval in seconds
 	Preview       bool     // Whether to use compact preview mode (for fzf)
 	Pods          []string // List of pod names to display
+	Shell         bool     // Whether to open an interactive shell
 	Doctor        bool     // Enable heuristic analysis
 	Explain       bool     // Enable AI explanation
 	Model         string   // AI Model to use
@@ -1184,6 +1188,268 @@ func clearScreen() {
 	fmt.Print("\033[H\033[2J")
 }
 
+func kubectlArgs(args Args) []string {
+	if args.Namespace == "" {
+		return nil
+	}
+	return []string{"-n", args.Namespace}
+}
+
+func fetchPod(kubectlArgs []string, pod string) (Pod, error) {
+	cmdArgs := append(append([]string{}, kubectlArgs...), "get", "pod", pod, "-ojson")
+	cmd := exec.Command("kubectl", cmdArgs...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return Pod{}, fmt.Errorf("could not fetch pod %s: %s", pod, strings.TrimSpace(string(output)))
+	}
+
+	var podObj Pod
+	if err := json.Unmarshal(output, &podObj); err != nil {
+		return Pod{}, fmt.Errorf("could not parse pod data for %s: %w", pod, err)
+	}
+
+	return podObj, nil
+}
+
+type containerInfo struct {
+	Name    string
+	State   string
+	Running bool
+}
+
+func containerStateLabel(status ContainerStatus) (string, bool) {
+	switch {
+	case status.State.Running != nil:
+		return "running", true
+	case status.State.Waiting != nil:
+		reason := status.State.Waiting.Reason
+		if reason == "" {
+			reason = "waiting"
+		}
+		return "waiting: " + reason, false
+	case status.State.Terminated != nil:
+		reason := status.State.Terminated.Message
+		if reason == "" {
+			reason = fmt.Sprintf("exit %d", status.State.Terminated.ExitCode)
+		}
+		return "terminated: " + reason, false
+	default:
+		return "unknown", false
+	}
+}
+
+func containerInfoForPod(kubectlArgs []string, pod string) ([]containerInfo, error) {
+	podObj, err := fetchPod(kubectlArgs, pod)
+	if err != nil {
+		return nil, err
+	}
+
+	statusByName := make(map[string]containerInfo, len(podObj.Status.ContainerStatuses))
+	for _, status := range podObj.Status.ContainerStatuses {
+		state, running := containerStateLabel(status)
+		statusByName[status.Name] = containerInfo{
+			Name:    status.Name,
+			State:   state,
+			Running: running,
+		}
+	}
+
+	infos := make([]containerInfo, 0, len(podObj.Spec.Containers))
+	for _, container := range podObj.Spec.Containers {
+		if info, ok := statusByName[container.Name]; ok {
+			infos = append(infos, info)
+			continue
+		}
+		infos = append(infos, containerInfo{Name: container.Name, State: "unknown"})
+	}
+
+	return infos, nil
+}
+
+func filterContainersByRestrict(containers []string, restrict string) ([]string, error) {
+	if restrict == "" {
+		return containers, nil
+	}
+
+	re, err := regexp.Compile(restrict)
+	if err != nil {
+		return nil, fmt.Errorf("invalid restrict regex: %w", err)
+	}
+
+	var filtered []string
+	for _, container := range containers {
+		if re.MatchString(container) {
+			filtered = append(filtered, container)
+		}
+	}
+
+	if len(filtered) == 0 {
+		return nil, fmt.Errorf("no containers matched restrict %q", restrict)
+	}
+
+	return filtered, nil
+}
+
+func selectContainerWithFzf(containers []string) (string, error) {
+	cmd := exec.Command("fzf", "-0", "-1", "--prompt", "container> ")
+	cmd.Stdin = strings.NewReader(strings.Join(containers, "\n"))
+	var output bytes.Buffer
+	cmd.Stdout = &output
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return "", fmt.Errorf("fzf selection failed: %w", err)
+	}
+
+	selection := strings.TrimSpace(output.String())
+	if selection == "" {
+		return "", fmt.Errorf("no container selected")
+	}
+
+	return selection, nil
+}
+
+func selectContainerByPrompt(containers []string) (string, error) {
+	fmt.Println("Select a container:")
+	for i, name := range containers {
+		fmt.Printf("  %d) %s\n", i+1, name)
+	}
+	fmt.Print("Enter number: ")
+
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		input, err := reader.ReadString('\n')
+		if err != nil {
+			return "", fmt.Errorf("failed to read selection: %w", err)
+		}
+		input = strings.TrimSpace(input)
+		if input == "" {
+			fmt.Print("Enter number: ")
+			continue
+		}
+
+		index, err := strconv.Atoi(input)
+		if err != nil || index < 1 || index > len(containers) {
+			fmt.Printf("Please enter a number between 1 and %d: ", len(containers))
+			continue
+		}
+
+		return containers[index-1], nil
+	}
+}
+
+func selectContainer(containers []string, restrict string) (string, error) {
+	filtered, err := filterContainersByRestrict(containers, restrict)
+	if err != nil {
+		return "", err
+	}
+
+	if len(filtered) == 1 {
+		return filtered[0], nil
+	}
+
+	if which("fzf") != "" {
+		return selectContainerWithFzf(filtered)
+	}
+
+	return selectContainerByPrompt(filtered)
+}
+
+var shellCandidates = []string{
+	"/bin/bash",
+	"/usr/bin/bash",
+	"/bin/sh",
+	"/usr/bin/sh",
+	"/bin/ash",
+	"/busybox/sh",
+	"/bin/dash",
+}
+
+func isBashShell(shell string) bool {
+	return filepath.Base(shell) == "bash"
+}
+
+func probeShell(kubectlArgs []string, pod, container, shell string) bool {
+	cmdArgs := append(append([]string{}, kubectlArgs...), "exec", pod, "-c", container, "--", shell, "-c", "exit 0")
+	cmd := exec.Command("kubectl", cmdArgs...)
+	cmd.Stdout = io.Discard
+	cmd.Stderr = io.Discard
+	return cmd.Run() == nil
+}
+
+func pickShell(kubectlArgs []string, pod, container string) (string, error) {
+	for _, shell := range shellCandidates {
+		if probeShell(kubectlArgs, pod, container, shell) {
+			return shell, nil
+		}
+	}
+	return "", fmt.Errorf("no usable shell found in pod %s (tried: %s)", pod, strings.Join(shellCandidates, ", "))
+}
+
+func runShell(args Args, kubectlArgs []string, pod string) error {
+	containers, err := containerInfoForPod(kubectlArgs, pod)
+	if err != nil {
+		return err
+	}
+	if len(containers) == 0 {
+		return fmt.Errorf("pod %s has no containers to shell into", pod)
+	}
+
+	allNames := make([]string, 0, len(containers))
+	runningNames := make([]string, 0, len(containers))
+	stateByName := make(map[string]string, len(containers))
+	runningByName := make(map[string]bool, len(containers))
+	for _, container := range containers {
+		allNames = append(allNames, container.Name)
+		stateByName[container.Name] = container.State
+		runningByName[container.Name] = container.Running
+		if container.Running {
+			runningNames = append(runningNames, container.Name)
+		}
+	}
+
+	candidates := allNames
+	if args.Restrict == "" {
+		if len(runningNames) == 0 {
+			var details []string
+			for _, name := range allNames {
+				details = append(details, fmt.Sprintf("%s (%s)", name, stateByName[name]))
+			}
+			return fmt.Errorf("no running containers in pod %s (%s)", pod, strings.Join(details, ", "))
+		}
+		candidates = runningNames
+	}
+
+	container, err := selectContainer(candidates, args.Restrict)
+	if err != nil {
+		return err
+	}
+	if !runningByName[container] {
+		state := stateByName[container]
+		if state == "" {
+			state = "unknown"
+		}
+		return fmt.Errorf("container %s is not running (%s)", container, state)
+	}
+
+	shell, err := pickShell(kubectlArgs, pod, container)
+	if err != nil {
+		return err
+	}
+	if !isBashShell(shell) {
+		fmt.Printf("Using %s (bash unavailable)\n", shell)
+	}
+
+	cmdArgs := append(append([]string{}, kubectlArgs...), "exec", "-it", pod, "-c", container, "--", shell)
+	cmd := exec.Command("kubectl", cmdArgs...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func main() {
 	args := parseArgs()
 
@@ -1191,6 +1457,7 @@ func main() {
 	if args.Namespace != "" {
 		kctl = fmt.Sprintf("kubectl -n %s", args.Namespace)
 	}
+	kubectlBaseArgs := kubectlArgs(args)
 
 	myself := which("kss")
 	preview := fmt.Sprintf("%s describe {}", kctl)
@@ -1207,6 +1474,43 @@ func main() {
 			preview += " -L"
 		}
 		preview += " {}"
+	}
+
+	if args.Shell {
+		pod := ""
+		if len(args.Pods) > 0 {
+			pod = args.Pods[0]
+		} else {
+			queryArgs := ""
+			if len(args.Pods) > 0 {
+				queryArgs = fmt.Sprintf("-q '%s'", strings.Join(args.Pods, " "))
+			}
+			runcmd := fmt.Sprintf("%s get pods -o name|fzf -0 -n 1 -m -1 %s --preview-window 'right:60%%:wrap' --preview='%s'", kctl, queryArgs, preview)
+			cmd := exec.Command("sh", "-c", runcmd)
+			output, err := cmd.Output()
+			if err != nil {
+				fmt.Println("No pods is no news which is arguably no worries.")
+				os.Exit(1)
+			}
+			podNames := strings.TrimSpace(string(output))
+			if podNames == "" {
+				fmt.Println("No pods is no news which is arguably no worries.")
+				os.Exit(1)
+			}
+			pods := strings.Split(strings.ReplaceAll(podNames, "pod/", ""), "\n")
+			pod = strings.TrimSpace(pods[0])
+		}
+
+		if pod == "" {
+			fmt.Println("No pods is no news which is arguably no worries.")
+			os.Exit(1)
+		}
+
+		if err := runShell(args, kubectlBaseArgs, pod); err != nil {
+			fmt.Printf("Unable to start shell in pod %s: %v\n", pod, err)
+			os.Exit(1)
+		}
+		return
 	}
 
 	queryArgs := ""
@@ -1358,6 +1662,8 @@ func parseArgs() Args {
 			args.Preview = true
 		case "-d", "--doctor":
 			args.Doctor = true
+		case "-s", "--shell":
+			args.Shell = true
 		case "--explain":
 			args.Explain = true
 		case "--model":
@@ -1410,6 +1716,7 @@ Options:
   -w, --watch                  Watch mode (auto-refresh)
   --watch-interval SECONDS     Watch refresh interval in seconds (default: 2)
   -d, --doctor                 Enable heuristic analysis (Doctor mode)
+  -s, --shell                  Open an interactive shell in the selected pod
   --explain                    Enable AI explanation for pod failures
   --model MODEL                AI Model to use (default: gemini-2.5-flash-lite)
   -p, --persona PERSONA        AI Persona: butler, sergeant, hacker, pirate, genz (default: random)

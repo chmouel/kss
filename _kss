@@ -17,6 +17,7 @@ local args=(
     {-l,--showlog}'[Show log]' \
     {-A,--annotations}'[Show annotations]' \
     {-L,--labels}'[Show labels]' \
+    {-s,--shell}'[Open a shell in the selected pod]' \
     {-r,--restrict}'[Retrict pods to]: :' \
     {-n,--namespace}'[Use namespace]:Use namespace:->namespace' \
     '*:pods:->pods'
