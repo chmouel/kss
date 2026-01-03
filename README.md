@@ -292,6 +292,11 @@ If KSS says "No pods is no news which is arguably no worries", it means:
 - You might need to specify a namespace with `-n`
 - Check your kubectl context: `kubectl config current-context`
 
+## Screenshots
+
+### Show events and error 
+<img width="1612" height="894" alt="image" src="https://github.com/user-attachments/assets/ccbead7a-c1ad-4b0a-a3ae-aa22422a1731" />
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
