@@ -169,14 +169,16 @@ func formatDuration(timestamp string) string {
 		return timestamp
 	}
 	duration := time.Since(t)
-	if duration < time.Minute {
+	switch {
+	case duration < time.Minute:
 		return fmt.Sprintf("%ds", int(duration.Seconds()))
-	} else if duration < time.Hour {
+	case duration < time.Hour:
 		return fmt.Sprintf("%dm", int(duration.Minutes()))
-	} else if duration < 24*time.Hour {
+	case duration < 24*time.Hour:
 		return fmt.Sprintf("%dh", int(duration.Hours()))
+	default:
+		return fmt.Sprintf("%dd", int(duration.Hours()/24))
 	}
-	return fmt.Sprintf("%dd", int(duration.Hours()/24))
 }
 
 // getStateIcon returns a Unicode icon for the container state
@@ -206,7 +208,7 @@ func showLog(kctl string, args Args, container, pod string) (string, error) {
 }
 
 // overCnt displays container information in a formatted, color-coded manner
-func overCnt(containers []ContainerStatus, kctl string, pod string, args Args, podObj Pod) {
+func overCnt(containers []ContainerStatus, kctl, pod string, args Args, podObj Pod) {
 	for _, container := range containers {
 		errmsg := ""
 
@@ -221,13 +223,14 @@ func overCnt(containers []ContainerStatus, kctl string, pod string, args Args, p
 		var stateColor string
 		age := ""
 
-		if container.State.Running != nil {
+		switch {
+		case container.State.Running != nil:
 			state = "Running"
 			stateColor = "blue"
 			if container.State.Running.StartedAt != "" {
 				age = formatDuration(container.State.Running.StartedAt)
 			}
-		} else if container.State.Terminated != nil {
+		case container.State.Terminated != nil:
 			if container.State.Terminated.ExitCode != 0 {
 				state = fmt.Sprintf("FAIL (exit: %d)", container.State.Terminated.ExitCode)
 				stateColor = "red"
@@ -238,7 +241,7 @@ func overCnt(containers []ContainerStatus, kctl string, pod string, args Args, p
 			if container.State.Terminated.FinishedAt != "" {
 				age = formatDuration(container.State.Terminated.FinishedAt)
 			}
-		} else if container.State.Waiting != nil {
+		case container.State.Waiting != nil:
 			reason := container.State.Waiting.Reason
 			if contains(failedContainers, reason) {
 				state = reason
@@ -404,7 +407,7 @@ func which(program string) string {
 }
 
 // printLabelsAnnotations displays pod labels or annotations in a formatted table
-func printLabelsAnnotations(pod Pod, key string, label string) {
+func printLabelsAnnotations(pod Pod, key, label string) {
 	var items map[string]string
 	if key == "labels" {
 		items = pod.Metadata.Labels
@@ -530,13 +533,14 @@ func printContainerPreview(container ContainerStatus) {
 	var stateColor string
 	age := ""
 
-	if container.State.Running != nil {
+	switch {
+	case container.State.Running != nil:
 		state = "Running"
 		stateColor = "blue"
 		if container.State.Running.StartedAt != "" {
 			age = formatDuration(container.State.Running.StartedAt)
 		}
-	} else if container.State.Terminated != nil {
+	case container.State.Terminated != nil:
 		if container.State.Terminated.ExitCode != 0 {
 			state = fmt.Sprintf("Failed(%d)", container.State.Terminated.ExitCode)
 			stateColor = "red"
@@ -547,7 +551,7 @@ func printContainerPreview(container ContainerStatus) {
 		if container.State.Terminated.FinishedAt != "" {
 			age = formatDuration(container.State.Terminated.FinishedAt)
 		}
-	} else if container.State.Waiting != nil {
+	case container.State.Waiting != nil:
 		reason := container.State.Waiting.Reason
 		if contains(failedContainers, reason) {
 			state = reason
@@ -596,7 +600,7 @@ type EventList struct {
 }
 
 // printEventsTimeline displays pod events in a relative timeline format
-func printEventsTimeline(pod Pod, kctl string, podName string, args Args) {
+func printEventsTimeline(pod Pod, kctl, podName string) {
 	fmt.Println()
 	fmt.Println(colorText("  Events", "cyan"))
 	fmt.Println(colorText("  ──────────────────────────────────────────────────────────────", "dim"))
@@ -653,10 +657,7 @@ func printEventsTimeline(pod Pod, kctl string, podName string, args Args) {
 			continue
 		}
 
-		diff := eventTime.Sub(podCreationTime)
-		if diff < 0 {
-			diff = 0
-		}
+		diff := max(eventTime.Sub(podCreationTime), 0)
 
 		// Format diff
 		var timeStr string
@@ -664,7 +665,7 @@ func printEventsTimeline(pod Pod, kctl string, podName string, args Args) {
 		minutes := totalSeconds / 60
 		seconds := totalSeconds % 60
 		hours := minutes / 60
-		minutes = minutes % 60
+		minutes %= minutes
 
 		if hours > 0 {
 			timeStr = fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)
@@ -691,7 +692,7 @@ func printEventsTimeline(pod Pod, kctl string, podName string, args Args) {
 }
 
 // printPodInfo displays comprehensive pod information including containers, labels, and events
-func printPodInfo(podObj Pod, kctl string, pod string, args Args) {
+func printPodInfo(podObj Pod, kctl, pod string, args Args) {
 	// Use compact preview if in preview mode
 	if args.Preview {
 		printPodPreview(podObj, pod, args)
@@ -865,7 +866,7 @@ func printPodInfo(podObj Pod, kctl string, pod string, args Args) {
 	overCnt(podObj.Status.ContainerStatuses, kctl, pod, args, podObj)
 
 	if args.Events {
-		printEventsTimeline(podObj, kctl, pod, args)
+		printEventsTimeline(podObj, kctl, pod)
 	}
 }
 

@@ -1,0 +1,50 @@
+version: 2
+
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - revive
+    - gocritic
+    - gosec
+    - misspell
+    - unconvert
+    - goconst
+    - prealloc
+    - testifylint
+    - usestdlibvars
+
+  settings:
+    gosec:
+      excludes:
+        - G104 # Ignoring errors in tests
+        - G204
+    revive:
+      rules:
+        - name: exported
+          severity: warning
+    goconst:
+      find-duplicates: true
+      min-occurrences: 100
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - experimental
+        - opinionated
+        - performance
+        - style
+      disabled-checks:
+        - whyNoLint
+        - wrapperFunc
+        - hugeParam
+        - unnamedResult
+        - evalOrder
+        - appendCombine
+        - nestingReduce
