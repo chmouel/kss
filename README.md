@@ -1,207 +1,140 @@
-# KSS - Kubernetes pod status on steroid 💉
+# KSS - Enhanced Kubernetes Pod Inspection
 
-A beautiful and feature-rich tool to show the current status of a pod and its associated `containers` and `initContainers`.
+I present to you KSS, a refined utility designed to illuminate the current status of a Kubernetes pod and its associated containers and initContainers with clarity and precision.
 
-This was developed out of frustration with `kubectl get pod` not showing much and `kubectl describe pod` showing way too much in a cryptic way. Debugging failed pods with a lot of `initContainers` and `sideCars` usually was done with `kubectl get pod -o yaml |less` with a lot of going up and down over a pager to figure out what's going on and a bunch of swearing 🔞. All those techniques for introspection and debugging are still useful and **KSS** is not planning to fully replace them but now thanks to it you can see quickly what happen and what fails and get your sanity back 😅.
+The standard `kubectl get pod` command, while functional, occasionally lacks the immediate depth one requires. Conversely, `kubectl describe pod` can offer an overwhelming abundance of detail that may obscure the pertinent facts. KSS bridges this gap, offering a comprehensive, aesthetically pleasing, and digestible overview of your pod's health, thereby allowing you to diagnose issues with dignity and efficiency.
 
 <img width="1193" height="847" alt="image" src="https://github.com/user-attachments/assets/c65ac2e8-ba61-4fbe-a72f-f70af4f9814a" />
 
-## Features ✨
+## Distinguishing Features
 
-- 🎨 **Beautiful UI** with color-coded status indicators, borders, and visual hierarchy
-- 🔍 **Interactive pod selection** using [fzf](https://github.com/junegunn/fzf) with live preview
-- ⏱️ **Watch mode** for real-time monitoring with auto-refresh
-- 📊 **Detailed container information** including:
-  - Container status with visual indicators (✓, ✗, ⏳)
-  - Container age (how long it's been running)
-  - Image names and versions
-  - Restart counts
-  - Ready status
-- 📝 **Enhanced logging** with formatted output and separators
-- 🏷️ **Labels and annotations** display with clean formatting
-- 📅 **Events** with chronological sorting
-- 🚨 **Better error detection** for common failure states
+- **Refined User Interface**: Presents data with elegant color-coding, borders, and a clear visual hierarchy.
+- **Interactive Selection**: Utilizes [fzf](https://github.com/junegunn/fzf) to provide a sophisticated interactive search with live previews.
+- **Continuous Monitoring**: Offers a "Watch mode" to observe the real-time status of your deployments.
+- **Comprehensive Container Details**:
+  - Visual status indicators (Success, Failure, Waiting).
+  - Accurate age and duration metrics.
+  - Image specifications.
+  - Restart counters for identifying instability.
+  - Readiness checks.
+- **Enhanced Logging**: Displays logs with proper formatting and distinct separators for clarity.
+- **Metadata Inspection**: elegantly presents Labels and Annotations.
+- **Chronological Events**: Lists pod events sorted by time to aid in forensic analysis.
+- **Intelligent Error Detection**: Highlights common failure states such as `CrashLoopBackOff` or `ImagePullBackOff`.
 
-## Usage
+## Instructions for Use
 
-### Basic Usage
+### Basic Operation
 
-You can specify a pod or multiple ones as argument to **KSS**, if you don't it will launch the lovely [fzf](https://github.com/junegunn/fzf) and let you choose the pod interactively, if there is only one pod available it will select it automatically. If you would like to choose multiple pods you can use the key [TAB] and select them, **KSS** will then show them all.
+One may specify a pod—or indeed, multiple pods—as arguments to the KSS command. Should you decline to provide an argument, the application will graciously launch the interactive selector (via `fzf`), allowing you to choose your desired pod from the list. If only a single pod is present, KSS will select it automatically for your convenience.
 
-**KSS** shows a preview when running with fzf, it will try to do the preview with itself if it cannot find itself in the `PATH` it will fallback to a good ol' and boring `kubectl describe` 👴🏼👵🏻.
+To select multiple pods in the interactive view, one needs only to press the `TAB` key. KSS will then proceed to display the details for all selected items.
+
+Please note that the interactive preview attempts to utilize KSS itself to render the information. Should KSS not be found within your system's `PATH`, it will resort to the standard `kubectl describe` command.
 
 ### Command Line Options
 
-```
+```text
 Usage: kss [OPTIONS] [POD...]
 
 Options:
-  -n, --namespace NAMESPACE    Use namespace
-  -r, --restrict REGEXP        Restrict to show only those containers (regexp)
-  -l, --showlog                Show logs of containers
-  --maxlines INT               Maximum line when showing logs (default: -1)
-  -L, --labels                 Show labels
-  -A, --annotations            Show annotations
-  -E, --events                 Show events
-  -w, --watch                  Watch mode (auto-refresh)
-  --watch-interval SECONDS     Watch refresh interval in seconds (default: 2)
-  -h, --help                   Display help message
+  -n, --namespace NAMESPACE    Specify the namespace to inspect.
+  -r, --restrict REGEXP        Restrict the display to containers matching the provided regular expression.
+  -l, --showlog                Retrieve and display container logs.
+  --maxlines INT               Limit the number of log lines displayed (default: all lines).
+  -L, --labels                 Reveal the pod's labels.
+  -A, --annotations            Reveal the pod's annotations.
+  -E, --events                 List the pod's events.
+  -w, --watch                  Enable watch mode for continuous monitoring.
+  --watch-interval SECONDS     Set the refresh interval for watch mode (default: 2 seconds).
+  -h, --help                   Display the help message.
 ```
 
 ### Examples
 
-#### Interactive Pod Selection
+#### Interactive Selection
 
 ```bash
-# Launch fzf to interactively select a pod
+# Launch the interactive selector
 kss
 
-# Select from a specific namespace
+# browse pods within a specific namespace
 kss -n production
-
-# Select multiple pods (use TAB in fzf)
-kss
 ```
 
-#### Direct Pod Selection
+#### Direct Selection
 
 ```bash
-# Show status for a specific pod
+# Inspect a specific pod
 kss my-pod
 
-# Show status for multiple pods
+# Inspect multiple pods simultaneously
 kss pod-1 pod-2 pod-3
 
-# Show status with namespace
+# Inspect a pod within a specific namespace
 kss -n production my-pod
 ```
 
-#### Viewing Logs
+#### Log Inspection
 
 ```bash
-# Show logs for all containers
+# Display logs for all containers
 kss my-pod -l
 
-# Show last 50 lines of logs
+# Display the final 50 lines of logs
 kss my-pod -l --maxlines 50
 
-# Show logs only for containers matching a regex
+# Display logs only for containers matching a pattern
 kss my-pod -r "app" -l
-
-# Show logs for init containers only
-kss my-pod -r "init" -l
 ```
 
-#### Watch Mode
+#### Continuous Monitoring
 
 ```bash
-# Watch a pod with default 2-second refresh
+# Monitor a pod (refreshes every 2 seconds by default)
 kss my-pod -w
 
-# Watch with custom refresh interval (5 seconds)
+# Monitor with a custom refresh interval of 5 seconds
 kss my-pod -w --watch-interval 5
-
-# Watch multiple pods
-kss pod-1 pod-2 -w
-
-# Watch with logs
-kss my-pod -w -l
 ```
 
-#### Labels and Annotations
+#### Metadata & Events
 
 ```bash
-# Show labels
-kss my-pod -L
-
-# Show annotations
-kss my-pod -A
-
-# Show both
+# Display labels and annotations
 kss my-pod -L -A
-```
 
-#### Events
-
-```bash
-# Show events for a pod
+# Display the sequence of events
 kss my-pod -E
 
-# Show events with other information
-kss my-pod -E -L
-```
-
-#### Combined Usage
-
-```bash
-# Full information with logs, labels, and events
+# A comprehensive view including logs, metadata, and events
 kss my-pod -l -L -A -E
-
-# Watch mode with logs and events
-kss my-pod -w -l -E --watch-interval 3
 ```
 
-## Output Format
+## Installation
 
-### Pod Header
+### Package Managers
 
-The pod information is displayed in a beautiful box with:
+#### Homebrew (macOS & Linux)
 
-- Pod name
-- Overall status (✅ SUCCESS, 🔄 RUNNING, ❌ FAIL)
-- Namespace
-- Phase
-- Age (time since pod creation)
-
-### Container Information
-
-For each container, KSS displays:
-
-- **Status**: Visual indicator (✓, ✗, ⏳) with color coding
-  - ✓ Green: Success/Running
-  - ✗ Red: Failed/Error
-  - ⏳ Yellow: Waiting
-- **Image**: Container image name
-- **Restarts**: Number of restarts (highlighted if > 0)
-- **Age**: How long the container has been in its current state
-- **Ready**: Whether the container is ready
-
-### Status Colors
-
-- 🟢 **Green**: Success, Running, Ready
-- 🔵 **Blue**: Running, Active
-- 🟡 **Yellow**: Waiting, Warning, Restarts
-- 🔴 **Red**: Failed, Error, Not Ready
-
-## Install
-
-### Packages
-
-#### Homebrew
-
-You can install **KSS** latest with homebrew, you just have to fire up those
-commands in your shell and **KSS** and its zsh completions will be installed :
+One may install the latest version of KSS via Homebrew. Simply execute the following commands in your terminal:
 
 ```shell
 brew tap chmouel/kss https://github.com/chmouel/kss
 brew install kss
 ```
 
-This has been tested as working on [linuxbrew](https://docs.brew.sh/Homebrew-on-Linux) too.
+#### Arch Linux
 
-#### Arch
-
-It's available on Arch AUR [here](https://aur.archlinux.org/packages/kss).
-
-Install it with your favourite aur installer (i.e: [yay](https://github.com/Jguer/yay))
+For users of Arch Linux, the package is available on the AUR [here](https://aur.archlinux.org/packages/kss). You may install it using your preferred helper, such as `yay`:
 
 ```bash
 yay -S kss
 ```
 
-### Manual install
+### Manual Installation
 
-You just make sure you have [Go](https://golang.org/) (>=1.21), [fzf](https://github.com/junegunn/fzf) and kubectl. You can build from source:
+Ensure that you have [Go](https://golang.org/) (version 1.21 or higher), [fzf](https://github.com/junegunn/fzf), and `kubectl` installed on your system. You may then build the application from the source:
 
 ```shell
 git clone https://github.com/chmouel/kss
@@ -210,105 +143,59 @@ go build -o kss main.go
 sudo cp kss /usr/local/bin/
 ```
 
-Or checkout this GIT repo and build the binary into your path.
+For `zsh` users, a completion file is available in the `_kss` directory, which you may add to your [`fpath`](https://unix.stackexchange.com/a/33898).
 
-With zsh you can install the [_kss](./_kss) completionfile  to your [fpath](https://unix.stackexchange.com/a/33898).
+### Prerequisites
 
-### Requirements
+- **kubectl**: Must be installed and properly configured to communicate with your cluster.
+- **fzf**: Essential for the interactive selection feature.
+- **Go**: Required only if you intend to compile the application from source.
 
-- **kubectl**: Must be installed and configured
-- **fzf**: Required for interactive pod selection (install via your package manager)
-- **Go**: Only needed if building from source (>=1.21)
+## Recommendations & Troubleshooting
 
+### A Suggested Workflow
 
-## Tips & Tricks 💡
+1.  **Identify**: Run `kss` to interactively locate the pod in distress.
+2.  **Investigate**: Use `kss my-pod -r "app" -l --maxlines 100` to examine the recent logs of the primary container.
+3.  **Contextualize**: Execute `kss my-pod -E` to review recent cluster events associated with the pod.
+4.  **Observe**: Finally, employ `kss my-pod -w` to monitor the pod as it attempts to recover.
 
-### Quick Debugging Workflow
+### Aliases
 
-```bash
-# 1. Find and select the problematic pod
-kss
-
-# 2. View logs for the failing container
-kss my-pod -r "app" -l --maxlines 100
-
-# 3. Check events to see what happened
-kss my-pod -E
-
-# 4. Watch the pod recover
-kss my-pod -w
-```
-
-### Using with kubectl aliases
+To expedite your workflow, you might consider adding the following aliases to your shell configuration:
 
 ```bash
-# Add to your .bashrc or .zshrc
 alias kp='kss'
 alias kpw='kss -w'
 alias kpl='kss -l'
 ```
 
-### Filtering containers
+### Common Issues
 
-```bash
-# Show only sidecar containers
-kss my-pod -r "sidecar"
+**fzf is missing:**
+If the application reports that `fzf` cannot be found, please ensure it is installed via your system's package manager (e.g., `brew install fzf` or `sudo apt install fzf`).
 
-# Show only init containers
-kss my-pod -r "init"
-
-# Show containers matching multiple patterns (use regex)
-kss my-pod -r "app|worker"
-```
-
-## Troubleshooting
-
-### fzf not found
-
-If you get an error about fzf not being found, install it:
-
-```bash
-# macOS
-brew install fzf
-
-# Linux
-sudo apt install fzf  # Debian/Ubuntu
-sudo yum install fzf  # RHEL/CentOS
-```
-
-### kubectl not configured
-
-Make sure kubectl is installed and your kubeconfig is set up:
-
-```bash
-kubectl get pods
-```
-
-### No pods found
-
-If KSS says "No pods is no news which is arguably no worries", it means:
-
-- No pods exist in the current/default namespace
-- You might need to specify a namespace with `-n`
-- Check your kubectl context: `kubectl config current-context`
+**No pods found:**
+Should the application report that "No pods is no news which is arguably no worries" (a whimsical way of stating that the list is empty), it typically indicates:
+- There are indeed no pods in the current namespace.
+- You may need to specify the correct namespace using the `-n` flag.
+- Your `kubectl` context may need adjustment.
 
 ## Screenshots
 
-### Show events and error 
+### Events and Error Display
 <img width="1612" height="894" alt="image" src="https://github.com/user-attachments/assets/ccbead7a-c1ad-4b0a-a3ae-aa22422a1731" />
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Your contributions are most welcome. Should you wish to improve this tool, please feel free to submit a Pull Request.
 
 ## License
 
-Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) for details.
+This software is licensed under the Apache License, Version 2.0. Please refer to the [LICENSE](LICENSE) file for further details.
 
-## Misc
+## Remarks
 
-- The code has been rewritten in Go for better performance and easier distribution. The original Python version was getting quite tortured, like some sort of spaghetti plate 🍝 with greasy meatballs 🥩 on the top, the kind of stuff you start to write quickly and dirty out of frustration to fix a problem and it grows until it really become an unreadable beast. So we rewrote it in Go! 🎉
+The application has been rewritten in Go to ensure superior performance and ease of distribution. The previous Python iteration, while valiant, had become somewhat unwieldy. The new Go implementation maintains all prior functionality—and indeed, expands upon it—while remaining a single, efficient binary.
 
-The Go version maintains all the functionality of the Python version while being faster and easier to distribute as a single binary. It also includes many new features like watch mode, better UI, and enhanced container information display.
-
-I may do a [krew](https://github.com/kubernetes-sigs/krew) plugin if this get [requested](https://github.com/chmouel/kss/issues/1) enough. Watch this space as cool people would say 😎🏄🤙.
+I am considering the creation of a [krew](https://github.com/kubernetes-sigs/krew) plugin, should there be sufficient interest from the community.

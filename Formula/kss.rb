@@ -1,6 +1,6 @@
 # coding: utf-8
 class Kss < Formula
-  desc "Kubernetes pod status on steroid 💉"
+  desc "Enhanced Kubernetes Pod Inspection"
   homepage "https://github.com/chmouel/kss"
   version "0.4.0"
 

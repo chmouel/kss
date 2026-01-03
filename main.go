@@ -1,4 +1,4 @@
-// Package main implements KSS - Kubernetes pod status on steroid.
+// Package main implements KSS - Enhanced Kubernetes Pod Inspection.
 // A beautiful and feature-rich tool to show the current status of pods
 // and their associated containers and initContainers.
 package main
@@ -1061,7 +1061,7 @@ func printHelp() {
 	helpText := `
 ╔════════════════════════════════════════════════════════════════════════╗
 ║                    KSS - Kubernetes Pod Status                         ║
-║                         on Steroid 💉                                  ║
+║                 Enhanced Kubernetes Pod Inspection                     ║
 ╚════════════════════════════════════════════════════════════════════════╝
 
 Usage: kss [OPTIONS] [POD...]
