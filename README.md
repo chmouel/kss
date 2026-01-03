@@ -4,6 +4,8 @@ A beautiful and feature-rich tool to show the current status of a pod and its as
 
 This was developed out of frustration with `kubectl get pod` not showing much and `kubectl describe pod` showing way too much in a cryptic way. Debugging failed pods with a lot of `initContainers` and `sideCars` usually was done with `kubectl get pod -o yaml |less` with a lot of going up and down over a pager to figure out what's going on and a bunch of swearing 🔞. All those techniques for introspection and debugging are still useful and **KSS** is not planning to fully replace them but now thanks to it you can see quickly what happen and what fails and get your sanity back 😅.
 
+<img width="1193" height="847" alt="image" src="https://github.com/user-attachments/assets/c65ac2e8-ba61-4fbe-a72f-f70af4f9814a" />
+
 ## Features ✨
 
 - 🎨 **Beautiful UI** with color-coded status indicators, borders, and visual hierarchy
