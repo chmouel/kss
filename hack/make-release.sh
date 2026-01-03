@@ -32,8 +32,8 @@ bumpversion() {
   VERSION=$(uv run --with semver python3 -c "import semver,sys;print(str(semver.VersionInfo.parse(sys.argv[1]).bump_${mode}()))" ${current})
 }
 
-[[ $(git rev-parse --abbrev-ref HEAD) != main ]] && {
-  echo "you need to be on the main branch"
+[[ $(git rev-parse --abbrev-ref HEAD) != master ]] && {
+  echo "you need to be on the master branch"
   exit 1
 }
 [[ -z ${VERSION} ]] && bumpversion
