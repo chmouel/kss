@@ -1,0 +1,94 @@
+version: 2
+builds:
+  - id: kss
+    env:
+      - CGO_ENABLED=0
+    main: ./
+    binary: kss
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -w
+      - -s
+archives:
+  - name_template: >-
+      {{- .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end -}}
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - LICENSE
+      - README.md
+homebrew_casks:
+  - name: kss
+    repository:
+      owner: chmouel
+      name: kss
+    directory: Casks
+    homepage: "https://github.com/chmouel/kss"
+    description: "kss - Kubernetes status on steroids"
+snapshot:
+  version_template: "{{ .Tag }}-next"
+
+release:
+  prerelease: "false"
+
+checksum:
+  name_template: "checksums.txt"
+
+nfpms:
+  - file_name_template: "{{ .ConventionalFileName }}"
+    homepage: https://github.com/chmouel/kss
+    description: "kss - Kubernetes status on steroids"
+    maintainer: Chmouel Boudjnah <chmouel@chmouel.com>
+    license: Apache 2.0
+    formats:
+      - apk
+      - deb
+      - rpm
+    bindir: /usr/bin
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^Brew formula update"
+      - Merge pull request
+      - Merge branch
+      - go mod tidy
+      - Update README.md
+      - Update coverage badge
+      - Brew cask update
+
+universal_binaries:
+  - ids:
+      - kss
+    replace: true
+
+aurs:
+  - name: kss-bin
+    homepage: "https://github.com/chmouel/kss"
+    description: "kss - Kubernetes status on steroids"
+    maintainers:
+      - "Chmouel Boudjnah <chmouel@chmouel.com>"
+    license: Apache 2.0
+    private_key: "{{ .Env.AUR_PRIVATE_KEY }}"
+    git_url: ssh://aur@aur.archlinux.org/kss-bin.git
+    package: |-
+      # bin
+      install -Dm755 "./kss" "${pkgdir}/usr/bin/kss"
+
+      # license
+      install -Dm644 "./LICENSE" "${pkgdir}/usr/share/licenses/kss/LICENSE"
