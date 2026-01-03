@@ -21,6 +21,6 @@ test:
 
 coverage:
 	go test ./... -covermode=count -coverprofile=coverage.out
-	go tool cover -func=coverage.out -o=coverage.out
+	go tool cover -func=coverage.out
 
 .PHONY: all build lint format test coverage sanity mkdir

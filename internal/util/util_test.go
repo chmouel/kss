@@ -118,34 +118,35 @@ func TestContains(t *testing.T) {
 
 func TestWhich(t *testing.T) {
 	tmpDir := t.TempDir()
-	
+
 	// Create a dummy executable
 	exeName := "testexec"
 	if runtime.GOOS == "windows" {
 		exeName += ".exe"
 	}
 	exePath := filepath.Join(tmpDir, exeName)
+	//nolint:gosec // G304 - Test file creation in temp dir
 	f, err := os.Create(exePath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	f.Close()
+	_ = f.Close()
 	// Make it executable
-	if err := os.Chmod(exePath, 0755); err != nil {
+	//nolint:gosec // G302 - Executable permission needed for test
+	if err := os.Chmod(exePath, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
 	// Add tmpDir to PATH
 	oldPath := os.Getenv("PATH")
-	defer os.Setenv("PATH", oldPath)
-	os.Setenv("PATH", fmt.Sprintf("%s%c%s", tmpDir, os.PathListSeparator, oldPath))
+	t.Setenv("PATH", fmt.Sprintf("%s%c%s", tmpDir, os.PathListSeparator, oldPath))
 
 	// Test finding it
 	found := Which(exeName)
 	// On macOS, /private/var/... vs /var/... can cause equality issues, so we evaluate symlinks
 	foundEval, _ := filepath.EvalSymlinks(found)
 	exePathEval, _ := filepath.EvalSymlinks(exePath)
-	
+
 	if foundEval != exePathEval {
 		t.Errorf("Which(%q) = %q, want %q", exeName, found, exePath)
 	}
