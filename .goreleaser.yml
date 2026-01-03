@@ -6,7 +6,7 @@ builds:
   - id: kss
     env:
       - CGO_ENABLED=0
-    main: ./
+    main: ./cmd/kss
     binary: kss
     goos:
       - linux
