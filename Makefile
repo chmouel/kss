@@ -21,6 +21,8 @@ test:
 
 coverage:
 	go test ./... -covermode=count -coverprofile=coverage.out
-	go tool cover -func=coverage.out
+	grep -vE "cmd/|internal/ai/" coverage.out > coverage.filtered.out
+	go tool cover -func=coverage.filtered.out
+	rm coverage.filtered.out
 
 .PHONY: all build lint format test coverage sanity mkdir

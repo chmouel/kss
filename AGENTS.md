@@ -17,6 +17,7 @@ Read the README if you really need to know what this project do.
 
 ## Before Finishing
 
+- Always use the make targets for actions. like coverage, build, test, sanity.
 - Always Run `make sanity` which will run golangci-lint, gofumpt, and go test.
 - Add tests for any new functionality.
 - Add README.md updates for any user-facing changes. Do not sound like
