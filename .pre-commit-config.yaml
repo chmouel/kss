@@ -1,0 +1,36 @@
+default_install_hook_types: ["pre-push"]
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-ast
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: check-toml
+      - id: check-yaml
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: mixed-line-ending
+  - repo: local
+    hooks:
+      - id: lint
+        name: golangci
+        entry: golangci-lint run --fix ./...
+        language: system
+        pass_filenames: false
+        types: [go]
+      - id: formatting
+        name: format with gofumpt
+        language: system
+        types: [go]
+        entry: gofumpt -l -w
+        pass_filenames: true
+      - id: testing
+        name: go test
+        language: system
+        types: [go]
+        entry: go test ./...
+        pass_filenames: false

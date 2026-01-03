@@ -2,7 +2,7 @@
 set -euf
 current=$(git describe --tags $(git rev-list --tags --max-count=1))
 VERSION=${1-""}
-[[ -z ${VERSION} ]] && { 
+[[ -z ${VERSION} ]] && {
    echo "Current version is ${current}"
    read -p "Would you like to bump [M]ajor, Mi[n]or or [P]atch: " ANSWER
    if [[ ${ANSWER,,} == "m" ]];then

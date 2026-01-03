@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    paths:
+      - "**.go"
+  pull_request:
+    paths:
+      - "**.go"
+
+permissions:
+  contents: write
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: "go.mod"
+
+      - uses: alexellis/setup-arkade@v3
+      - uses: alexellis/arkade-get@master
+        with:
+          golangci-lint: latest
+      - name: Set up Gofumpt
+        uses: luisnquin/setup-gofumpt@v2
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Run Pre-commit
+        run: |
+          uvx pre-commit run -a
+
+      - name: Generate Coverage
+        run: make coverage
+
+      - name: Generate Coverage Badge
+        uses: tj-actions/coverage-badge-go@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          filename: coverage.out
+
+      - name: Commit badge
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add README.md
+          git diff --staged --quiet || git commit -m "Update coverage badge"
+          git push

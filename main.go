@@ -11,6 +11,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"syscall"
 	"time"
@@ -20,16 +21,14 @@ import (
 	"github.com/mattn/go-runewidth"
 )
 
-var (
-	// failedContainers lists Kubernetes container states that indicate failure
-	failedContainers = []string{
-		"ImagePullBackOff",
-		"CrashLoopBackOff",
-		"ErrImagePull",
-		"CreateContainerConfigError",
-		"InvalidImageName",
-	}
-)
+// failedContainers lists Kubernetes container states that indicate failure
+var failedContainers = []string{
+	"ImagePullBackOff",
+	"CrashLoopBackOff",
+	"ErrImagePull",
+	"CreateContainerConfigError",
+	"InvalidImageName",
+}
 
 // Args holds command-line arguments and options
 type Args struct {
@@ -87,7 +86,7 @@ type PodStatus struct {
 	HostIP                string            `json:"hostIP,omitempty"`
 	NodeName              string            `json:"nodeName,omitempty"`
 	QOSClass              string            `json:"qosClass,omitempty"`
-	Conditions            []PodCondition   `json:"conditions,omitempty"`
+	Conditions            []PodCondition    `json:"conditions,omitempty"`
 }
 
 type PodCondition struct {
@@ -99,11 +98,11 @@ type PodCondition struct {
 }
 
 type PodMetadata struct {
-	Name        string            `json:"name"`
-	Namespace   string            `json:"namespace"`
-	Labels      map[string]string `json:"labels,omitempty"`
-	Annotations map[string]string `json:"annotations,omitempty"`
-	CreationTimestamp string      `json:"creationTimestamp,omitempty"`
+	Name              string            `json:"name"`
+	Namespace         string            `json:"namespace"`
+	Labels            map[string]string `json:"labels,omitempty"`
+	Annotations       map[string]string `json:"annotations,omitempty"`
+	CreationTimestamp string            `json:"creationTimestamp,omitempty"`
 }
 
 type Pod struct {
@@ -113,11 +112,11 @@ type Pod struct {
 }
 
 type PodSpec struct {
-	Containers      []ContainerSpec `json:"containers,omitempty"`
-	InitContainers  []ContainerSpec `json:"initContainers,omitempty"`
-	NodeName        string          `json:"nodeName,omitempty"`
-	ServiceAccountName string        `json:"serviceAccountName,omitempty"`
-	PriorityClassName string        `json:"priorityClassName,omitempty"`
+	Containers         []ContainerSpec `json:"containers,omitempty"`
+	InitContainers     []ContainerSpec `json:"initContainers,omitempty"`
+	NodeName           string          `json:"nodeName,omitempty"`
+	ServiceAccountName string          `json:"serviceAccountName,omitempty"`
+	PriorityClassName  string          `json:"priorityClassName,omitempty"`
 }
 
 type ResourceList map[string]string
@@ -206,100 +205,11 @@ func showLog(kctl string, args Args, container, pod string) (string, error) {
 	return strings.TrimSpace(string(output)), nil
 }
 
-func printContainerTable(containers []ContainerStatus, kctl string, pod string, args Args, title string) {
-	if len(containers) == 0 {
-		return
-	}
-
-	t := table.NewWriter()
-	t.SetOutputMirror(os.Stdout)
-	t.AppendHeader(table.Row{"Container", "Status", "Image", "Restarts", "Age", "Ready"})
-	t.SetStyle(table.StyleColoredBright)
-	t.Style().Options.SeparateRows = true
-
-	for _, container := range containers {
-		if args.Restrict != "" {
-			matched, err := regexp.MatchString(args.Restrict, container.Name)
-			if err != nil || !matched {
-				continue
-			}
-		}
-
-		state := ""
-		var stateColor string
-		age := "N/A"
-
-		if container.State.Running != nil {
-			state = "Running"
-			stateColor = "blue"
-			if container.State.Running.StartedAt != "" {
-				age = formatDuration(container.State.Running.StartedAt)
-			}
-		} else if container.State.Terminated != nil {
-			if container.State.Terminated.ExitCode != 0 {
-				state = fmt.Sprintf("Failed (exit: %d)", container.State.Terminated.ExitCode)
-				stateColor = "red"
-			} else {
-				state = "Succeeded"
-				stateColor = "green"
-			}
-			if container.State.Terminated.FinishedAt != "" {
-				age = formatDuration(container.State.Terminated.FinishedAt)
-			}
-		} else if container.State.Waiting != nil {
-			reason := container.State.Waiting.Reason
-			if contains(failedContainers, reason) {
-				state = reason
-				stateColor = "red"
-			} else {
-				state = fmt.Sprintf("Waiting: %s", reason)
-				stateColor = "yellow"
-			}
-		}
-
-		icon := getStateIcon(state)
-		statusText := fmt.Sprintf("%s %s", icon, state)
-		
-		image := container.Image
-		if image == "" {
-			image = colorText("N/A", "dim")
-		}
-
-		ready := "No"
-		if container.Ready {
-			ready = colorText("Yes", "green")
-		} else {
-			ready = colorText("No", "red")
-		}
-
-		restarts := fmt.Sprintf("%d", container.RestartCount)
-		if container.RestartCount > 0 {
-			restarts = colorText(restarts, "yellow")
-		}
-
-		t.AppendRow(table.Row{
-			colorText(container.Name, "white_bold"),
-			colorText(statusText, stateColor),
-			image,
-			restarts,
-			age,
-			ready,
-		})
-	}
-
-	if t.Length() > 0 {
-		fmt.Println()
-		fmt.Println(colorText(fmt.Sprintf("  %s", title), "cyan"))
-		t.Render()
-		fmt.Println()
-	}
-}
-
 // overCnt displays container information in a formatted, color-coded manner
 func overCnt(containers []ContainerStatus, kctl string, pod string, args Args, podObj Pod) {
 	for _, container := range containers {
 		errmsg := ""
-		
+
 		if args.Restrict != "" {
 			matched, err := regexp.MatchString(args.Restrict, container.Name)
 			if err != nil || !matched {
@@ -346,10 +256,10 @@ func overCnt(containers []ContainerStatus, kctl string, pod string, args Args, p
 
 		icon := getStateIcon(state)
 		cname := container.Name
-		
+
 		// Simple, clean format: icon name status (age) [restarts]
 		statusLine := fmt.Sprintf("  %s %s", icon, colorText(cname, "white_bold"))
-		
+
 		// Status with age and restarts
 		statusParts := []string{colorText(state, stateColor)}
 		if age != "" {
@@ -358,14 +268,14 @@ func overCnt(containers []ContainerStatus, kctl string, pod string, args Args, p
 		if container.RestartCount > 0 {
 			statusParts = append(statusParts, colorText(fmt.Sprintf("[%d restarts]", container.RestartCount), "yellow"))
 		}
-		
+
 		// Align status to a fixed column (50 chars for name)
 		namePadding := 50
 		if len(cname) > namePadding {
 			namePadding = len(cname) + 2
 		}
 		fmt.Printf("%-*s %s\n", namePadding+4, statusLine, strings.Join(statusParts, " "))
-		
+
 		// Image on separate line
 		if container.Image != "" {
 			image := container.Image
@@ -375,7 +285,7 @@ func overCnt(containers []ContainerStatus, kctl string, pod string, args Args, p
 			}
 			fmt.Printf("     %s %s\n", colorText("Image:", "dim"), image)
 		}
-		
+
 		// Show resources if available (from spec)
 		if len(podObj.Spec.Containers) > 0 {
 			for _, spec := range podObj.Spec.Containers {
@@ -402,7 +312,7 @@ func overCnt(containers []ContainerStatus, kctl string, pod string, args Args, p
 				}
 			}
 		}
-		
+
 		// Show ready status
 		readyStatus := colorText("No", "red")
 		if container.Ready {
@@ -509,13 +419,13 @@ func printLabelsAnnotations(pod Pod, key string, label string) {
 	fmt.Println()
 	fmt.Println(colorText(fmt.Sprintf("  %s", label), "cyan"))
 	fmt.Println(colorText("  ──────────────────────────────────────────────────────────────", "dim"))
-	
+
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
 	t.SetStyle(table.StyleColoredBright)
 	t.Style().Options.DrawBorder = false
 	t.Style().Options.SeparateColumns = false
-	
+
 	for k, v := range items {
 		t.AppendRow(table.Row{
 			fmt.Sprintf("    %s", colorText(k, "white")),
@@ -528,12 +438,7 @@ func printLabelsAnnotations(pod Pod, key string, label string) {
 
 // contains checks if a string slice contains a specific item
 func contains(slice []string, item string) bool {
-	for _, s := range slice {
-		if s == item {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(slice, item)
 }
 
 // stripANSI removes ANSI color codes from a string to get actual display width
@@ -560,9 +465,8 @@ func padToWidth(s string, width int) string {
 	return s + strings.Repeat(" ", width-actualWidth)
 }
 
-
 // printPodPreview displays a compact preview optimized for fzf preview window
-func printPodPreview(podObj Pod, kctl string, pod string, args Args) {
+func printPodPreview(podObj Pod, pod string, args Args) {
 	if podObj.Status.InitContainerStatuses == nil {
 		podObj.Status.InitContainerStatuses = []ContainerStatus{}
 	}
@@ -578,10 +482,10 @@ func printPodPreview(podObj Pod, kctl string, pod string, args Args) {
 		cntAllcontainers+cntAllicontainers,
 		cntFailcontainers+cntFailicontainers,
 	)
-	
+
 	fmt.Printf("%s %s\n", colorText("Pod:", "cyan"), colorText(pod, "white_bold"))
 	fmt.Printf("%s %s\n", colorText("Status:", "cyan"), colorText(text, colour))
-	
+
 	if podObj.Metadata.Namespace != "" {
 		fmt.Printf("%s %s\n", colorText("Namespace:", "cyan"), podObj.Metadata.Namespace)
 	}
@@ -656,7 +560,7 @@ func printContainerPreview(container ContainerStatus) {
 
 	icon := getStateIcon(state)
 	cname := container.Name
-	
+
 	// Very simple format for preview - one line, no fancy alignment
 	statusInfo := colorText(state, stateColor)
 	if age != "" {
@@ -665,9 +569,9 @@ func printContainerPreview(container ContainerStatus) {
 	if container.RestartCount > 0 {
 		statusInfo += " " + colorText(fmt.Sprintf("[%d]", container.RestartCount), "yellow")
 	}
-	
+
 	fmt.Printf("  %s %s  %s\n", icon, colorText(cname, "white_bold"), statusInfo)
-	
+
 	// Image on separate line, truncated
 	if container.Image != "" {
 		image := container.Image
@@ -683,7 +587,7 @@ func printContainerPreview(container ContainerStatus) {
 func printPodInfo(podObj Pod, kctl string, pod string, args Args) {
 	// Use compact preview if in preview mode
 	if args.Preview {
-		printPodPreview(podObj, kctl, pod, args)
+		printPodPreview(podObj, pod, args)
 		return
 	}
 	if podObj.Status.InitContainerStatuses == nil {
@@ -699,20 +603,20 @@ func printPodInfo(podObj Pod, kctl string, pod string, args Args) {
 	boxWidth := 76
 	boxTop := strings.Repeat("═", boxWidth-2)
 	boxBottom := strings.Repeat("═", boxWidth-2)
-	
+
 	fmt.Println()
-	fmt.Printf("%s%s%s\n", 
+	fmt.Printf("%s%s%s\n",
 		colorText("╔", "cyan"),
 		colorText(boxTop, "cyan"),
 		colorText("╗", "cyan"))
-	
+
 	// Pod name
 	podLine := fmt.Sprintf("%s %s", colorText("Pod:", "cyan"), colorText(pod, "white_bold"))
 	fmt.Printf("%s %s %s\n",
 		colorText("║", "cyan"),
 		padToWidth(podLine, boxWidth-4),
 		colorText("║", "cyan"))
-	
+
 	// Status
 	colour, text := getStatus(
 		hasFailure(podObj.Status.InitContainerStatuses) || hasFailure(podObj.Status.ContainerStatuses),
@@ -724,7 +628,7 @@ func printPodInfo(podObj Pod, kctl string, pod string, args Args) {
 		colorText("║", "cyan"),
 		padToWidth(statusLine, boxWidth-4),
 		colorText("║", "cyan"))
-	
+
 	// Add namespace and phase info
 	if podObj.Metadata.Namespace != "" {
 		nsLine := fmt.Sprintf("%s %s", colorText("Namespace:", "cyan"), podObj.Metadata.Namespace)
@@ -782,7 +686,7 @@ func printPodInfo(podObj Pod, kctl string, pod string, args Args) {
 			padToWidth(priorityLine, boxWidth-4),
 			colorText("║", "cyan"))
 	}
-	
+
 	// Show pod conditions
 	if len(podObj.Status.Conditions) > 0 {
 		fmt.Printf("%s %s %s\n",
@@ -791,9 +695,10 @@ func printPodInfo(podObj Pod, kctl string, pod string, args Args) {
 			colorText("║", "cyan"))
 		for _, condition := range podObj.Status.Conditions {
 			statusColor := "red"
-			if condition.Status == "True" {
+			switch condition.Status {
+			case "True":
 				statusColor = "green"
-			} else if condition.Status == "False" {
+			case "False":
 				statusColor = "yellow"
 			}
 			condLine := fmt.Sprintf("  %s: %s", condition.Type, colorText(condition.Status, statusColor))
@@ -806,7 +711,7 @@ func printPodInfo(podObj Pod, kctl string, pod string, args Args) {
 				colorText("║", "cyan"))
 		}
 	}
-	
+
 	fmt.Printf("%s%s%s\n",
 		colorText("╚", "cyan"),
 		colorText(boxBottom, "cyan"),
@@ -827,8 +732,8 @@ func printPodInfo(podObj Pod, kctl string, pod string, args Args) {
 			cntFailicontainers,
 		)
 		s := fmt.Sprintf("%d/%d", cntFailicontainers, cntAllicontainers)
-		fmt.Printf("%s %s %s\n", 
-			colorText("Init Containers:", "cyan"), 
+		fmt.Printf("%s %s %s\n",
+			colorText("Init Containers:", "cyan"),
 			colorText(s, colour),
 			colorText(fmt.Sprintf("(%d total)", cntAllicontainers), "dim"))
 		overCnt(podObj.Status.InitContainerStatuses, kctl, pod, args, podObj)
@@ -846,8 +751,8 @@ func printPodInfo(podObj Pod, kctl string, pod string, args Args) {
 	} else {
 		s = fmt.Sprintf("%d/%d", cntFailcontainers, cntAllcontainers)
 	}
-	fmt.Printf("%s %s %s\n", 
-		colorText("Containers:", "cyan"), 
+	fmt.Printf("%s %s %s\n",
+		colorText("Containers:", "cyan"),
 		colorText(s, colour),
 		colorText(fmt.Sprintf("(%d total)", cntAllcontainers), "dim"))
 	overCnt(podObj.Status.ContainerStatuses, kctl, pod, args, podObj)
@@ -913,7 +818,7 @@ func main() {
 	}
 
 	runcmd := fmt.Sprintf("%s get pods -o name|fzf -0 -n 1 -m -1 %s --preview-window 'right:60%%:wrap' --preview='%s'", kctl, queryArgs, preview)
-	
+
 	cmd := exec.Command("sh", "-c", runcmd)
 	output, err := cmd.Output()
 	if err != nil {
@@ -947,9 +852,9 @@ func main() {
 				os.Exit(0)
 			default:
 				clearScreen()
-				fmt.Printf("%s Watching pods (refresh every %v, press Ctrl+C to exit)\n\n", 
+				fmt.Printf("%s Watching pods (refresh every %v, press Ctrl+C to exit)\n\n",
 					colorText("⏱", "cyan"), interval)
-				
+
 				for _, pod := range pods {
 					pod = strings.TrimSpace(pod)
 					if pod == "" {
@@ -1010,7 +915,7 @@ func main() {
 // parseArgs parses command-line arguments and returns an Args struct
 func parseArgs() Args {
 	args := Args{
-		MaxLines:     "-1",
+		MaxLines:      "-1",
 		WatchInterval: 2,
 	}
 
@@ -1045,7 +950,7 @@ func parseArgs() Args {
 		case "--watch-interval":
 			if i+1 < len(os.Args) {
 				var interval int
-				fmt.Sscanf(os.Args[i+1], "%d", &interval)
+				_, _ = fmt.Sscanf(os.Args[i+1], "%d", &interval)
 				args.WatchInterval = interval
 				i++
 			}
