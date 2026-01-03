@@ -6,7 +6,7 @@ mkdir:
 	mkdir -p bin
 
 build: mkdir
-	go build -o bin/$(NAME) ./
+	go build -o bin/$(NAME) ./cmd/$(NAME)
 
 sanity: lint format test
 
