@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: giggle-pod
+spec:
+  containers:
+  - name: giggler
+    image: busybox
+    command: ["/bin/sh", "-c", "echo 'Hehe...'; sleep 5; exit 1"]
