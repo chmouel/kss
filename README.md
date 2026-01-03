@@ -220,27 +220,6 @@ With zsh you can install the [_kss](./_kss) completionfile  to your [fpath](http
 - **fzf**: Required for interactive pod selection (install via your package manager)
 - **Go**: Only needed if building from source (>=1.21)
 
-## Screenshots
-
-### Success run
-
-![Success run](.screenshots/success.png)
-
-### Failed run
-
-![Fail run](.screenshots/failure.png)
-
-### Failed run with logs
-
-![Fail run](.screenshots/logging.png)
-
-### Restrict the logs output only to a container and only to one line with the -r and --maxlength flags
-
-![Restrict to some pod](.screenshots/restrict.png)
-
-### Selecting a pod with fzf
-
-[![Select a pod with FZF](https://asciinema.org/a/xOCUspvH0z5R2y56jtN32Xk6G.png)](https://asciinema.org/a/xOCUspvH0z5R2y56jtN32Xk6G)
 
 ## Tips & Tricks 💡
 
