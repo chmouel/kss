@@ -179,7 +179,7 @@ One may install the latest version of KSS via Homebrew. Simply execute the follo
 
 ```shell
 brew tap chmouel/kss https://github.com/chmouel/kss
-brew install kss
+brew install kss --cask
 ```
 
 #### Arch Linux
@@ -206,16 +206,19 @@ sudo cp kss /usr/local/bin/
 KSS provides dynamic completion for Bash and Zsh.
 
 **Bash:**
+
 ```bash
 source <(kss --completion bash)
 ```
 
 **Zsh:**
+
 ```zsh
 source <(kss --completion zsh)
 ```
 
 You can also generate the scripts and save them to your completion directory:
+
 ```bash
 kss --completion bash > /etc/bash_completion.d/kss
 # or for zsh
@@ -235,10 +238,10 @@ Completion suggestions include namespaces, pods, and persona names for your conv
 
 ### A Suggested Workflow
 
-1.  **Identify**: Run `kss` to interactively locate the pod in distress.
-2.  **Investigate**: Use `kss my-pod -r "app" -l --maxlines 100` to examine the recent logs of the primary container.
-3.  **Contextualize**: Execute `kss my-pod -E` to review recent cluster events associated with the pod.
-4.  **Observe**: Finally, employ `kss my-pod -w` to monitor the pod as it attempts to recover.
+1. **Identify**: Run `kss` to interactively locate the pod in distress.
+2. **Investigate**: Use `kss my-pod -r "app" -l --maxlines 100` to examine the recent logs of the primary container.
+3. **Contextualize**: Execute `kss my-pod -E` to review recent cluster events associated with the pod.
+4. **Observe**: Finally, employ `kss my-pod -w` to monitor the pod as it attempts to recover.
 
 ### Aliases
 
@@ -257,6 +260,7 @@ If the application reports that `fzf` cannot be found, please ensure it is insta
 
 **No pods found:**
 Should the application report that "No pods is no news which is arguably no worries" (a whimsical way of stating that the list is empty), it typically indicates:
+
 - There are indeed no pods in the current namespace.
 - You may need to specify the correct namespace using the `-n` flag.
 - Your `kubectl` context may need adjustment.
@@ -264,6 +268,7 @@ Should the application report that "No pods is no news which is arguably no worr
 ## Screenshots
 
 ### Events and Error Display
+
 <img width="1612" height="894" alt="image" src="https://github.com/user-attachments/assets/ccbead7a-c1ad-4b0a-a3ae-aa22422a1731" />
 
 ### AI Analysis with the Alfred persona
