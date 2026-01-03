@@ -54,7 +54,7 @@ Options:
   -s, --shell                  Open an interactive shell in the selected pod.
   --explain                    Enable AI explanation for pod failures.
   --model MODEL                AI model to use (default: gemini-2.5-flash-lite).
-  -p, --persona PERSONA        AI persona: butler, sergeant, hacker, pirate, genz (default: random).
+  -p, --persona PERSONA        AI persona: neutral, butler, sergeant, hacker, pirate, genz (default: random).
   --completion SHELL           Output shell completion code (bash, zsh).
   -h, --help                   Display the help message.
 ```
@@ -137,14 +137,19 @@ kss my-pod --explain
 
 # Select a persona and model
 kss my-pod --explain -p hacker --model gemini-2.5-flash
+
+# Set a default persona for AI explanations
+export KSS_PERSONA=neutral
+kss my-pod --explain
 ```
 
-If you prefer a neutral, technical tone, the `hacker` persona is the best suited of the lot.
+If you prefer a neutral, technical tone with no personality, choose the `neutral` persona.
 
 Personas at a glance:
 
 | Persona | Tone |
 | --- | --- |
+| neutral | Neutral, technical, no personality |
 | butler | Polite, formal, efficient (British butler) |
 | sergeant | Direct, demanding, no-nonsense |
 | hacker | Neutral, technical, concise |

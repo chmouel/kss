@@ -20,7 +20,7 @@ const bashCompletion = `_kss_completions()
             return 0
             ;;
         -p|--persona)
-            local personas="butler sergeant hacker pirate genz"
+            local personas="neutral butler sergeant hacker pirate genz"
             COMPREPLY=( $(compgen -W "${personas}" -- ${cur}) )
             return 0
             ;;
@@ -63,7 +63,7 @@ _kss() {
         {-s,--shell}'[Open an interactive shell in the selected pod]'
         '--explain[Enable AI explanation for pod failures]'
         '--model[AI Model to use]:model:'
-        {-p,--persona}'[AI Persona]:persona:(butler sergeant hacker pirate genz)'
+        {-p,--persona}'[AI Persona]:persona:(neutral butler sergeant hacker pirate genz)'
         {-h,--help}'[Display this help message]'
         '--completion[Output shell completion code]:shell:(bash zsh)'
     )

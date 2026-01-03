@@ -202,7 +202,10 @@ func parseArgs() model.Args {
 		Model:         "gemini-2.5-flash-lite",
 	}
 
-	personas := []string{"butler", "sergeant", "hacker", "pirate", "genz"}
+	personas := []string{"neutral", "butler", "sergeant", "hacker", "pirate", "genz"}
+	if envPersona := os.Getenv("KSS_PERSONA"); envPersona != "" {
+		args.Persona = envPersona
+	}
 
 	for i := 1; i < len(os.Args); i++ {
 		arg := os.Args[i]
@@ -305,7 +308,7 @@ Options:
   -s, --shell                  Open an interactive shell in the selected pod
   --explain                    Enable AI explanation for pod failures
   --model MODEL                AI Model to use (default: gemini-2.5-flash-lite)
-  -p, --persona PERSONA        AI Persona: butler, sergeant, hacker, pirate, genz (default: random)
+  -p, --persona PERSONA        AI Persona: neutral, butler, sergeant, hacker, pirate, genz (default: random)
   --completion SHELL           Output shell completion code for the specified shell (bash, zsh)
   -h, --help                   Display this help message
 `

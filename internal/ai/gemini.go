@@ -25,6 +25,7 @@ func ExplainPod(podObj model.Pod, kctl, podName string, args model.Args) {
 	}
 
 	personaDisplay := map[string]string{
+		"neutral":  "Neutral",
 		"butler":   "🤵 Alfred",
 		"sergeant": "🪖 The Drill Sergeant",
 		"hacker":   "⌨️ The Cyberpunk Hacker",
@@ -86,6 +87,8 @@ func ExplainPod(podObj model.Pod, kctl, podName string, args model.Args) {
 	// 4. Construct Persona-specific instructions
 	personaInstructions := ""
 	switch args.Persona {
+	case "neutral":
+		personaInstructions = "Use a neutral, technical tone. No persona, no slang, no flourishes."
 	case "sergeant":
 		personaInstructions = "Speak in the persona of a stern Drill Sergeant. Be demanding and direct, but keep it professional. Use caps for emphasis."
 	case "hacker":
