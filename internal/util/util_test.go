@@ -15,35 +15,37 @@ import (
 
 func TestColorText(t *testing.T) {
 	// Force color output for testing
+	t.Setenv("NO_COLOR", "")
+	origNoColor := color.NoColor
+	t.Cleanup(func() {
+		color.NoColor = origNoColor
+	})
 	color.NoColor = false
 
-	cases := []struct {
+	colorCases := []struct {
 		text      string
 		colorName string
-		check     func(string) bool
 	}{
-		{
-			text:      "hello",
-			colorName: "red",
-			check: func(s string) bool {
-				// Check for red color code start (31) and the text
-				return strings.Contains(s, "\x1b[31") && strings.Contains(s, "hello")
-			},
-		},
-		{
-			text:      "world",
-			colorName: "unknown",
-			check: func(s string) bool {
-				return s == "world"
-			},
-		},
+		{text: "hello", colorName: "red"},
+		{text: "warn", colorName: "yellow"},
+		{text: "info", colorName: "blue"},
+		{text: "note", colorName: "cyan"},
+		{text: "ok", colorName: "green"},
+		{text: "debug", colorName: "magenta"},
+		{text: "plain", colorName: "white"},
+		{text: "bold", colorName: "white_bold"},
+		{text: "dim", colorName: "dim"},
 	}
 
-	for _, tc := range cases {
+	for _, tc := range colorCases {
 		got := ColorText(tc.text, tc.colorName)
-		if !tc.check(got) {
-			t.Errorf("ColorText(%q, %q) = %q, failed check", tc.text, tc.colorName, got)
+		if !strings.Contains(got, "\x1b[") || !strings.Contains(got, tc.text) {
+			t.Errorf("ColorText(%q, %q) = %q, expected ANSI output", tc.text, tc.colorName, got)
 		}
+	}
+
+	if got := ColorText("world", "unknown"); got != "world" {
+		t.Errorf("ColorText(%q, %q) = %q, want %q", "world", "unknown", got, "world")
 	}
 }
 

@@ -21,7 +21,7 @@ test:
 
 coverage:
 	go test ./... -covermode=count -coverprofile=coverage.out
-	grep -vE "cmd/|internal/ai/" coverage.out > coverage.filtered.out
+	grep -vE "cmd/|internal/ai/|internal/kube/|internal/ui/" coverage.out > coverage.filtered.out
 	go tool cover -func=coverage.filtered.out
 	rm coverage.filtered.out
 

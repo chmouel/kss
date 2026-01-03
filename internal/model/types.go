@@ -20,6 +20,7 @@ type Args struct {
 	Explain       bool     // Enable AI explanation
 	Model         string   // AI Model to use
 	Persona       string   // AI Persona to use
+	Completion    string   // Output shell completion code
 }
 
 // ContainerState mirrors the possible lifecycle phases of a pod container.
