@@ -583,6 +583,113 @@ func printContainerPreview(container ContainerStatus) {
 	}
 }
 
+type Event struct {
+	LastTimestamp string `json:"lastTimestamp"`
+	Type          string `json:"type"`
+	Reason        string `json:"reason"`
+	Message       string `json:"message"`
+	Count         int32  `json:"count"`
+}
+
+type EventList struct {
+	Items []Event `json:"items"`
+}
+
+// printEventsTimeline displays pod events in a relative timeline format
+func printEventsTimeline(pod Pod, kctl string, podName string, args Args) {
+	fmt.Println()
+	fmt.Println(colorText("  Events", "cyan"))
+	fmt.Println(colorText("  ──────────────────────────────────────────────────────────────", "dim"))
+
+	cmdStr := fmt.Sprintf("%s get events --field-selector involvedObject.name=%s --field-selector involvedObject.kind=Pod -o json", kctl, podName)
+	output, err := exec.Command("sh", "-c", cmdStr).Output()
+	if err != nil {
+		fmt.Printf("    %s\n", colorText("Error fetching events", "red"))
+		return
+	}
+
+	var eventList EventList
+	if err := json.Unmarshal(output, &eventList); err != nil {
+		fmt.Printf("    %s: %v\n", colorText("Error parsing events", "red"), err)
+		return
+	}
+
+	if len(eventList.Items) == 0 {
+		fmt.Printf("    %s\n", colorText("No events found", "dim"))
+		return
+	}
+
+	// Filter out events without timestamp
+	var validEvents []Event
+	for _, e := range eventList.Items {
+		if e.LastTimestamp != "" {
+			validEvents = append(validEvents, e)
+		}
+	}
+	eventList.Items = validEvents
+
+	if len(eventList.Items) == 0 {
+		fmt.Printf("    %s\n", colorText("No events with timestamps found", "dim"))
+		return
+	}
+
+	// Sort events by timestamp
+	slices.SortFunc(eventList.Items, func(a, b Event) int {
+		return strings.Compare(a.LastTimestamp, b.LastTimestamp)
+	})
+
+	podCreationTime, err := time.Parse(time.RFC3339, pod.Metadata.CreationTimestamp)
+	// If pod creation time failed, use the first event time
+	if err != nil {
+		t, err2 := time.Parse(time.RFC3339, eventList.Items[0].LastTimestamp)
+		if err2 == nil {
+			podCreationTime = t
+		}
+	}
+
+	for _, event := range eventList.Items {
+		eventTime, err := time.Parse(time.RFC3339, event.LastTimestamp)
+		if err != nil {
+			continue
+		}
+
+		diff := eventTime.Sub(podCreationTime)
+		if diff < 0 {
+			diff = 0
+		}
+
+		// Format diff
+		var timeStr string
+		totalSeconds := int(diff.Seconds())
+		minutes := totalSeconds / 60
+		seconds := totalSeconds % 60
+		hours := minutes / 60
+		minutes = minutes % 60
+
+		if hours > 0 {
+			timeStr = fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)
+		} else {
+			timeStr = fmt.Sprintf("%02d:%02d", minutes, seconds)
+		}
+
+		// Color based on Type and Reason
+		reasonColor := "white"
+		if event.Type == "Warning" {
+			reasonColor = "yellow"
+			if strings.Contains(strings.ToLower(event.Reason), "failed") || strings.Contains(strings.ToLower(event.Reason), "backoff") {
+				reasonColor = "red"
+			}
+		}
+
+		// Print: Time Reason (Message)
+		// Truncate message if too long? For now let it wrap or just show as is.
+		fmt.Printf("    %s %s %s\n",
+			colorText(timeStr, "dim"),
+			colorText(event.Reason, reasonColor),
+			colorText(fmt.Sprintf("(%s)", event.Message), "dim"))
+	}
+}
+
 // printPodInfo displays comprehensive pod information including containers, labels, and events
 func printPodInfo(podObj Pod, kctl string, pod string, args Args) {
 	// Use compact preview if in preview mode
@@ -758,27 +865,7 @@ func printPodInfo(podObj Pod, kctl string, pod string, args Args) {
 	overCnt(podObj.Status.ContainerStatuses, kctl, pod, args, podObj)
 
 	if args.Events {
-		fmt.Println()
-		fmt.Println(colorText("  Events", "cyan"))
-		fmt.Println(colorText("  ──────────────────────────────────────────────────────────────", "dim"))
-		cmd := fmt.Sprintf("kubectl get events --sort-by='.lastTimestamp' --field-selector involvedObject.name=%s --field-selector involvedObject.kind=Pod", pod)
-		if args.Namespace != "" {
-			cmd = fmt.Sprintf("kubectl -n %s get events --sort-by='.lastTimestamp' --field-selector involvedObject.name=%s --field-selector involvedObject.kind=Pod", args.Namespace, pod)
-		}
-		output, _ := exec.Command("sh", "-c", cmd).Output()
-		outputStr := strings.TrimSpace(string(output))
-		lines := strings.Split(outputStr, "\n")
-		if len(lines) > 1 {
-			fmt.Printf("    %s\n", colorText(lines[0], "white_bold"))
-			for _, line := range lines[1:] {
-				if strings.TrimSpace(line) != "" {
-					fmt.Printf("    %s\n", line)
-				}
-			}
-		} else {
-			fmt.Printf("    %s\n", colorText("No events found", "dim"))
-		}
-		fmt.Println()
+		printEventsTimeline(podObj, kctl, pod, args)
 	}
 }
 
