@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nother-pod
+spec:
+  containers:
+    - name: notther
+      image: busyboxxxxa
+      command: ["/bin/sh", "-c", "echo 'Hehe...'; sleep 5; exit 1"]

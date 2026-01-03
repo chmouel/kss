@@ -4,8 +4,11 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"math/rand"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -16,6 +19,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/charmbracelet/glamour"
 	"github.com/fatih/color"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/mattn/go-runewidth"
@@ -43,6 +47,10 @@ type Args struct {
 	WatchInterval int      // Watch refresh interval in seconds
 	Preview       bool     // Whether to use compact preview mode (for fzf)
 	Pods          []string // List of pod names to display
+	Doctor        bool     // Enable heuristic analysis
+	Explain       bool     // Enable AI explanation
+	Model         string   // AI Model to use
+	Persona       string   // AI Persona to use
 }
 
 type ContainerState struct {
@@ -198,8 +206,12 @@ func getStateIcon(state string) string {
 }
 
 // showLog retrieves and returns container logs using kubectl
-func showLog(kctl string, args Args, container, pod string) (string, error) {
-	cmd := exec.Command("sh", "-c", fmt.Sprintf("%s logs --tail=%s %s -c%s", kctl, args.MaxLines, pod, container))
+func showLog(kctl string, args Args, container, pod string, previous bool) (string, error) {
+	cmdArgs := fmt.Sprintf("%s logs --tail=%s %s -c%s", kctl, args.MaxLines, pod, container)
+	if previous {
+		cmdArgs += " -p"
+	}
+	cmd := exec.Command("sh", "-c", cmdArgs)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("could not run '%s': %v", cmd.String(), err)
@@ -335,7 +347,7 @@ func overCnt(containers []ContainerStatus, kctl, pod string, args Args, podObj P
 		}
 
 		if args.ShowLog {
-			outputlog, err := showLog(kctl, args, container.Name, pod)
+			outputlog, err := showLog(kctl, args, container.Name, pod, false)
 			if err == nil && outputlog != "" {
 				fmt.Println()
 				fmt.Printf("    %s\n", colorText(fmt.Sprintf("Logs for %s:", container.Name), "cyan"))
@@ -868,6 +880,303 @@ func printPodInfo(podObj Pod, kctl, pod string, args Args) {
 	if args.Events {
 		printEventsTimeline(podObj, kctl, pod)
 	}
+
+	if args.Doctor || hasFailure(podObj.Status.ContainerStatuses) || hasFailure(podObj.Status.InitContainerStatuses) {
+		diagnosePod(podObj, kctl, pod, args)
+	}
+
+	if args.Explain {
+		explainPod(podObj, kctl, pod, args)
+	}
+}
+
+// explainPod gathers context and asks AI for an explanation
+func explainPod(podObj Pod, kctl, podName string, args Args) {
+	apiKey := os.Getenv("GEMINI_API_KEY")
+	if apiKey == "" {
+		fmt.Println()
+		fmt.Printf("    %s %s\n", colorText("🧠 AI Explanation:", "cyan"), colorText("GEMINI_API_KEY not set. Cannot provide AI analysis.", "red"))
+		return
+	}
+
+	personaDisplay := map[string]string{
+		"butler":   "🤵 Alfred",
+		"sergeant": "🪖 The Drill Sergeant",
+		"hacker":   "⌨️ The Cyberpunk Hacker",
+		"pirate":   "🏴‍☠️ The Pirate",
+		"genz":     "✨ The Gen Z Influencer",
+	}
+	displayName := personaDisplay[args.Persona]
+	if displayName == "" {
+		displayName = args.Persona
+	}
+
+	fmt.Println()
+	fmt.Printf("    %s %s", colorText("🧠 AI Explanation:", "cyan"), colorText(fmt.Sprintf("%s is investigating...", displayName), "dim"))
+
+	// 1. Gather Context
+	podJSON, _ := json.MarshalIndent(podObj, "", "  ")
+
+	// 2. Gather Events
+	cmdStr := fmt.Sprintf("%s get events --field-selector involvedObject.name=%s --field-selector involvedObject.kind=Pod -o json", kctl, podName)
+	eventsOutput, _ := exec.Command("sh", "-c", cmdStr).Output()
+
+	// 3. Gather Logs (from failing containers)
+	var logs strings.Builder
+	collectLogs := func(containers []ContainerStatus) {
+		for _, c := range containers {
+			if hasFailure([]ContainerStatus{c}) || c.RestartCount > 0 {
+				origMaxLines := args.MaxLines
+				args.MaxLines = "100" // Increased context for AI
+
+				// Try previous logs first if there are restarts
+				if c.RestartCount > 0 {
+					l, err := showLog(kctl, args, c.Name, podName, true)
+					if err == nil && l != "" {
+						logs.WriteString(fmt.Sprintf("\n--- Previous Logs for container %s (Crashed Instance) ---\n%s\n", c.Name, l))
+					}
+				}
+
+				// Always get current logs too
+				l, err := showLog(kctl, args, c.Name, podName, false)
+				args.MaxLines = origMaxLines
+				if err == nil && l != "" {
+					logs.WriteString(fmt.Sprintf("\n--- Current Logs for container %s ---\n%s\n", c.Name, l))
+				}
+			}
+		}
+	}
+	collectLogs(podObj.Status.InitContainerStatuses)
+	collectLogs(podObj.Status.ContainerStatuses)
+
+	// 4. Construct Persona-specific instructions
+	personaInstructions := ""
+	switch args.Persona {
+	case "sergeant":
+		personaInstructions = "Speak in the persona of a stern Drill Sergeant. Be demanding and direct, but keep it professional. Use caps for emphasis."
+	case "hacker":
+		personaInstructions = "Speak in the persona of an edgy cyberpunk hacker. Use technical slang like 'glitch', 'patching the ghost', 'zero-day', and 'mainframe'. Be cool and efficient."
+	case "pirate":
+		personaInstructions = "Speak in the persona of a rough pirate. Use 'Arrgh', 'matey', and nautical terms. Be gritty but helpful."
+	case "genz":
+		personaInstructions = "Speak in the persona of a Gen Z influencer. Use 'no cap', 'it's giving', 'shook', and 'vibe check'. Use plenty of emojis."
+	default:
+		personaInstructions = "Speak in the persona of Alfred, a refined British butler. Be polite, formal, but efficient. Address the user as 'sir'. Never use the word 'master'."
+	}
+
+	// 5. Construct Prompt
+	prompt := fmt.Sprintf(`%s
+Your task is to diagnose a pod failure.
+
+Context:
+- Pod Name: %s
+- Namespace: %s
+- Phase: %s
+
+Pod Status (JSON):
+%s
+
+Events:
+%s
+
+Logs:
+%s
+
+Instructions:
+1. Adhere strictly to your persona.
+2. Analyze the logs and events to identify the root cause.
+3. If "Previous Logs" are present, prioritize them.
+4. Provide a VERY CONCISE explanation of the failure (1-2 sentences max).
+5. Provide a specific *kubectl* command or YAML fix to resolve it.
+6. Use clear Markdown formatting. Use bolding and code blocks effectively.
+7. Do not waste words. Get straight to the point.`,
+		personaInstructions, podName, podObj.Metadata.Namespace, podObj.Status.Phase,
+		string(podJSON), string(eventsOutput), logs.String())
+
+	// 6. Call Gemini API
+	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", args.Model, apiKey)
+
+	reqBody := map[string]interface{}{
+		"contents": []map[string]interface{}{
+			{
+				"parts": []map[string]interface{}{
+					{"text": prompt},
+				},
+			},
+		},
+		"safetySettings": []map[string]interface{}{
+			{"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+			{"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+			{"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+			{"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+		},
+	}
+	jsonData, _ := json.Marshal(reqBody)
+
+	// #nosec G107
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		fmt.Printf("\r    %s %s\n", colorText("🧠 AI Explanation:", "cyan"), colorText("Error calling AI API: "+err.Error(), "red"))
+		return
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	var geminiResp struct {
+		Candidates []struct {
+			Content struct {
+				Parts []struct {
+					Text string `json:"text"`
+				} `json:"parts"`
+			} `json:"content"`
+		} `json:"candidates"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&geminiResp); err != nil {
+		fmt.Printf("\r    %s %s\n", colorText("🧠 AI Explanation:", "cyan"), colorText("Error decoding AI response.", "red"))
+		return
+	}
+
+	if len(geminiResp.Candidates) == 0 || len(geminiResp.Candidates[0].Content.Parts) == 0 {
+		// Dump the raw body for debugging if we get an empty candidate list (often means a safety block or 400 error that wasn't caught)
+		// We re-read the body which is a bit tricky with http.Response, but for now let's just print a generic error with a tip.
+		fmt.Printf("\r    %s %s\n", colorText("🧠 AI Explanation:", "cyan"), colorText("AI returned no candidates. This might be due to Safety Settings or an invalid prompt.", "yellow"))
+		return
+	}
+
+	explanation := geminiResp.Candidates[0].Content.Parts[0].Text
+
+	// Debug: Print raw explanation length
+	// fmt.Printf("\n[Debug] Received explanation of length: %d\n", len(explanation))
+
+	// Clear the "Consulting..." line
+	fmt.Print("\r")
+
+	// Render Markdown using glamour
+	r, _ := glamour.NewTermRenderer(
+		glamour.WithAutoStyle(),
+		glamour.WithWordWrap(80),
+	)
+	out, err := r.Render(explanation)
+	if err != nil {
+		fmt.Println("Error rendering markdown:", err)
+		fmt.Println(explanation) // Fallback
+	} else {
+		if out == "" {
+			fmt.Println("Markdown renderer returned empty string. Fallback to raw text:")
+			fmt.Println(explanation)
+		} else {
+			fmt.Print(out)
+		}
+	}
+	fmt.Println()
+}
+
+// clearScreen clears the terminal screen (used in watch mode)
+func diagnosePod(podObj Pod, kctl, podName string, args Args) {
+	fmt.Println()
+	fmt.Println(colorText("  🩺 Doctor Analysis", "cyan"))
+	fmt.Println(colorText("  ──────────────────────────────────────────────────────────────", "dim"))
+
+	foundIssue := false
+	diagnoseContainer := func(container ContainerStatus, isInit bool) {
+		issues := []string{}
+
+		checkTerminated := func(state *TerminatedState) {
+			if state == nil {
+				return
+			}
+			exitCode := state.ExitCode
+			switch exitCode {
+			case 137:
+				issues = append(issues, "Likely OOMKilled (Out of Memory). Your container exceeded its memory limits.")
+			case 1, 2:
+				issues = append(issues, fmt.Sprintf("Application crashed (Exit Code %d). This is usually an internal application error.", exitCode))
+			case 127:
+				issues = append(issues, "Command not found. Check your container's entrypoint or command.")
+			}
+		}
+
+		// 1. Check Exit Codes (Current or Last)
+		if container.State.Terminated != nil {
+			checkTerminated(container.State.Terminated)
+		} else if container.LastState != nil && container.LastState.Terminated != nil {
+			checkTerminated(container.LastState.Terminated)
+		}
+
+		// 2. Check Waiting Reasons
+		if container.State.Waiting != nil {
+			reason := container.State.Waiting.Reason
+			switch reason {
+			case "ImagePullBackOff", "ErrImagePull":
+				issues = append(issues, "Failed to pull image. Check if the image name/tag is correct and if the registry requires authentication.")
+			case "CrashLoopBackOff":
+				issues = append(issues, "Container is crashing repeatedly. Check application logs for errors during startup.")
+			case "CreateContainerConfigError":
+				issues = append(issues, "Configuration error. Likely a missing ConfigMap or Secret.")
+			}
+		}
+
+		// 3. Log Analysis (if we can get them)
+		if container.State.Terminated != nil || container.RestartCount > 0 || (container.State.Waiting != nil && container.State.Waiting.Reason == "CrashLoopBackOff") {
+			// Get some logs to check for common patterns
+			origMaxLines := args.MaxLines
+			args.MaxLines = "100" // Get enough context for diagnosis
+
+			// Try to get previous logs if restarting, otherwise current logs
+			usePrevious := container.RestartCount > 0
+			logs, err := showLog(kctl, args, container.Name, podName, usePrevious)
+			// If previous logs failed (maybe not available yet) or empty, try current
+			if (err != nil || logs == "") && usePrevious {
+				logs, err = showLog(kctl, args, container.Name, podName, false)
+			}
+			args.MaxLines = origMaxLines
+
+			if err == nil && logs != "" {
+				lowerLogs := strings.ToLower(logs)
+				if strings.Contains(lowerLogs, "connection refused") || strings.Contains(lowerLogs, "dial tcp") {
+					issues = append(issues, "Network error detected (Connection Refused). Check if dependent services are reachable.")
+				}
+				if strings.Contains(lowerLogs, "timeout") || strings.Contains(lowerLogs, "deadline exceeded") {
+					issues = append(issues, "Timeout detected. A service or resource might be slow or unreachable.")
+				}
+				if strings.Contains(lowerLogs, "permission denied") || strings.Contains(lowerLogs, "forbidden") {
+					issues = append(issues, "Permission denied. Check the Pod's SecurityContext or file system permissions.")
+				}
+				if strings.Contains(lowerLogs, "not found") && (strings.Contains(lowerLogs, "config") || strings.Contains(lowerLogs, "file")) {
+					issues = append(issues, "Missing file or configuration. Check your volume mounts and ConfigMaps.")
+				}
+			}
+		}
+
+		if len(issues) > 0 {
+			foundIssue = true
+			prefix := ""
+			if isInit {
+				prefix = "(Init) "
+			}
+			fmt.Printf("    %s %s\n", colorText(fmt.Sprintf("%sContainer %s:", prefix, container.Name), "white_bold"), colorText("Diagnosis", "yellow"))
+			for _, issue := range issues {
+				fmt.Printf("    • %s\n", issue)
+			}
+		} else if args.Doctor && container.State.Running != nil && container.RestartCount > 0 {
+			// Explicit Doctor check for "Running but suspicious"
+			foundIssue = true
+			fmt.Printf("    %s %s\n", colorText(fmt.Sprintf("Container %s:", container.Name), "white_bold"), colorText("Stability Warning", "yellow"))
+			fmt.Printf("    • Container is running but has restarted %d times. Check logs for intermittent crashes.\n", container.RestartCount)
+		}
+	}
+
+	for _, c := range podObj.Status.InitContainerStatuses {
+		diagnoseContainer(c, true)
+	}
+	for _, c := range podObj.Status.ContainerStatuses {
+		diagnoseContainer(c, false)
+	}
+
+	if !foundIssue {
+		fmt.Printf("    %s\n", colorText("No obvious issues detected by heuristics.", "dim"))
+	}
+	fmt.Println()
 }
 
 // clearScreen clears the terminal screen (used in watch mode)
@@ -1005,7 +1314,10 @@ func parseArgs() Args {
 	args := Args{
 		MaxLines:      "-1",
 		WatchInterval: 2,
+		Model:         "gemini-2.5-flash-lite",
 	}
+
+	personas := []string{"butler", "sergeant", "hacker", "pirate", "genz"}
 
 	for i := 1; i < len(os.Args); i++ {
 		arg := os.Args[i]
@@ -1044,6 +1356,20 @@ func parseArgs() Args {
 			}
 		case "--preview":
 			args.Preview = true
+		case "-d", "--doctor":
+			args.Doctor = true
+		case "--explain":
+			args.Explain = true
+		case "--model":
+			if i+1 < len(os.Args) {
+				args.Model = os.Args[i+1]
+				i++
+			}
+		case "-p", "--persona":
+			if i+1 < len(os.Args) {
+				args.Persona = os.Args[i+1]
+				i++
+			}
 		case "-h", "--help":
 			printHelp()
 			os.Exit(0)
@@ -1052,6 +1378,12 @@ func parseArgs() Args {
 				args.Pods = append(args.Pods, arg)
 			}
 		}
+	}
+
+	// Pick a random persona if not specified
+	if args.Persona == "" {
+		// #nosec G404
+		args.Persona = personas[rand.Intn(len(personas))]
 	}
 
 	return args
@@ -1077,15 +1409,11 @@ Options:
   -E, --events                 Show events
   -w, --watch                  Watch mode (auto-refresh)
   --watch-interval SECONDS     Watch refresh interval in seconds (default: 2)
+  -d, --doctor                 Enable heuristic analysis (Doctor mode)
+  --explain                    Enable AI explanation for pod failures
+  --model MODEL                AI Model to use (default: gemini-2.5-flash-lite)
+  -p, --persona PERSONA        AI Persona: butler, sergeant, hacker, pirate, genz (default: random)
   -h, --help                   Display this help message
-
-Examples:
-  kss                           # Interactive pod selection with fzf
-  kss my-pod                    # Show status for specific pod
-  kss -n production             # Select pod from production namespace
-  kss -l --maxlines 50          # Show last 50 lines of logs
-  kss -r "app" -l               # Show logs only for containers matching "app"
-  kss -w --watch-interval 5     # Watch mode, refresh every 5 seconds
 `
 	fmt.Println(helpText)
 }
