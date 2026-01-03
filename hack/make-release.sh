@@ -48,5 +48,5 @@ echo "Releasing version ${VERSION}"
 
 git tag -s ${VERSION} -m "Releasing version ${VERSION}"
 git push --tags origin ${VERSION}
-git pull origin main
-git push origin main
+git pull origin master
+git push origin master
