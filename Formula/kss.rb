@@ -12,10 +12,16 @@ class Kss < Formula
   sha256 "08453cac989ad58c28eb4e3ba3cb68b9ebfeec4304cda26ac76ae4efc01bb088"
 
   def install
-    system "go", "build", "-o", "kss", "main.go"
+    system "go", "build", "-o", "kss", "./cmd/kss"
     bin.install "kss"
     bin.install_symlink "kss" => "kubectl-kss"
+
+    # Generate completions
+    system "./kss --completion bash > kss.bash"
+    system "./kss --completion zsh > _kss"
+    bash_completion.install "kss.bash" => "kss"
     zsh_completion.install "_kss"
+
     prefix.install_metafiles
   end
 

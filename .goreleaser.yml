@@ -1,4 +1,7 @@
 version: 2
+before:
+  hooks:
+    - make completions
 builds:
   - id: kss
     env:
@@ -29,6 +32,7 @@ archives:
     files:
       - LICENSE
       - README.md
+      - completions/*
 homebrew_casks:
   - name: kss
     repository:
@@ -57,6 +61,11 @@ nfpms:
       - deb
       - rpm
     bindir: /usr/bin
+    contents:
+      - src: completions/kss.bash
+        dst: /usr/share/bash-completion/completions/kss
+      - src: completions/kss.zsh
+        dst: /usr/share/zsh/site-functions/_kss
 changelog:
   sort: asc
   use: github
@@ -92,3 +101,7 @@ aurs:
 
       # license
       install -Dm644 "./LICENSE" "${pkgdir}/usr/share/licenses/kss/LICENSE"
+
+      # completions
+      install -Dm644 "./completions/kss.bash" "${pkgdir}/usr/share/bash-completion/completions/kss"
+      install -Dm644 "./completions/kss.zsh" "${pkgdir}/usr/share/zsh/site-functions/_kss"

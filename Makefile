@@ -25,4 +25,10 @@ coverage:
 	go tool cover -func=coverage.filtered.out
 	rm coverage.filtered.out
 
-.PHONY: all build lint format test coverage sanity mkdir
+
+completions:
+	@mkdir -p completions
+	go run ./cmd/kss --completion bash > completions/kss.bash
+	go run ./cmd/kss --completion zsh > completions/kss.zsh
+
+.PHONY: all build lint format test coverage sanity mkdir completions

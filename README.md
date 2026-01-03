@@ -156,7 +156,26 @@ go build -o kss main.go
 sudo cp kss /usr/local/bin/
 ```
 
-For `zsh` users, a completion file is available in the `_kss` directory, which you may add to your [`fpath`](https://unix.stackexchange.com/a/33898).
+### Shell Completion
+
+KSS provides dynamic completion for Bash and Zsh.
+
+**Bash:**
+```bash
+source <(kss --completion bash)
+```
+
+**Zsh:**
+```zsh
+source <(kss --completion zsh)
+```
+
+You can also generate the scripts and save them to your completion directory:
+```bash
+kss --completion bash > /etc/bash_completion.d/kss
+# or for zsh
+kss --completion zsh > /usr/share/zsh/site-functions/_kss
+```
 
 ### Prerequisites
 
