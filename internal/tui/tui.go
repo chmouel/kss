@@ -1083,11 +1083,12 @@ func (m Model) renderOverview(item list.Item) string {
 
 				// Style the container status
 				var cStyle lipgloss.Style
-				if strings.HasPrefix(status, "Running") || strings.HasPrefix(status, "Completed") {
+				switch {
+				case strings.HasPrefix(status, "Running") || strings.HasPrefix(status, "Completed"):
 					cStyle = successStyle
-				} else if strings.Contains(status, "Error") || strings.Contains(status, "BackOff") {
+				case strings.Contains(status, "Error") || strings.Contains(status, "BackOff"):
 					cStyle = failedStyle
-				} else {
+				default:
 					cStyle = waitingStyle
 				}
 

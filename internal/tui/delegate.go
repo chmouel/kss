@@ -37,12 +37,13 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, item list.Ite
 		statusStyle lipgloss.Style
 	)
 
-	if podItem, ok := item.(PodItem); ok {
-		title = podItem.title
-		desc = podItem.desc
+	switch i := item.(type) {
+	case PodItem:
+		title = i.title
+		desc = i.desc
 
 		// Determine status style and icon for Pod
-		switch podItem.pod.Status.Phase {
+		switch i.pod.Status.Phase {
 		case "Running", "Succeeded":
 			statusStyle = statusSuccess
 			statusIcon = " " // Box
@@ -56,12 +57,12 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, item list.Ite
 			statusStyle = statusWaiting
 			statusIcon = "• "
 		}
-	} else if prItem, ok := item.(PipelineRunItem); ok {
-		title = prItem.title
-		desc = prItem.desc
+	case PipelineRunItem:
+		title = i.title
+		desc = i.desc
 
 		// Determine status for PipelineRun
-		_, color, _, _ := tekton.StatusLabel(prItem.pr.Status.Conditions)
+		_, color, _, _ := tekton.StatusLabel(i.pr.Status.Conditions)
 		switch color {
 		case "green":
 			statusStyle = statusSuccess
@@ -76,7 +77,7 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, item list.Ite
 			statusStyle = statusWaiting
 			statusIcon = "• "
 		}
-	} else {
+	default:
 		return
 	}
 
