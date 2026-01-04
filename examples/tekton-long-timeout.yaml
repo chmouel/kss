@@ -1,0 +1,19 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: timeout-test
+spec:
+  timeouts:
+    pipeline: "0h1m0s" # 1 minute total for the entire pipeline
+    tasks: "0h0m40s" # 40 seconds max for all non-finally tasks
+  pipelineSpec:
+    tasks:
+      - name: slow-task
+        timeout: "10s" # Individual task timeout override
+        taskSpec:
+          steps:
+            - name: sleep-step
+              image: alpine
+              script: |
+                echo "Sleeping for 30s..."
+                sleep 30

@@ -6,11 +6,13 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/fatih/color"
 	"github.com/mattn/go-runewidth"
+	"golang.org/x/term"
 )
 
 // ColorText applies color formatting to text based on the color name
@@ -104,6 +106,30 @@ func PadToWidth(s string, width int) string {
 		return s
 	}
 	return s + strings.Repeat(" ", width-actualWidth)
+}
+
+// TerminalWidth returns the current terminal width or a sensible default.
+func TerminalWidth() int {
+	if cols := os.Getenv("COLUMNS"); cols != "" {
+		if width, err := strconv.Atoi(cols); err == nil && width > 0 {
+			return width
+		}
+	}
+	if width, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil && width > 0 {
+		return width
+	}
+	return 120
+}
+
+// ResourceName returns the name portion from a resource/name string.
+func ResourceName(value string) string {
+	if value == "" {
+		return value
+	}
+	if idx := strings.LastIndex(value, "/"); idx >= 0 && idx < len(value)-1 {
+		return value[idx+1:]
+	}
+	return value
 }
 
 // FilterContainersByRestrict filters a list of containers by a regex pattern

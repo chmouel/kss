@@ -203,6 +203,35 @@ func TestPadToWidth(t *testing.T) {
 	}
 }
 
+func TestTerminalWidthFromEnv(t *testing.T) {
+	t.Setenv("COLUMNS", "88")
+	if got := TerminalWidth(); got != 88 {
+		t.Fatalf("TerminalWidth() = %d, want %d", got, 88)
+	}
+}
+
+func TestResourceName(t *testing.T) {
+	cases := []struct {
+		input string
+		want  string
+	}{
+		{input: "", want: ""},
+		{input: "pod/example", want: "example"},
+		{input: "pipelinerun.tekton.dev/run-1", want: "run-1"},
+		{input: "plain-name", want: "plain-name"},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.input, func(t *testing.T) {
+			got := ResourceName(tc.input)
+			if got != tc.want {
+				t.Fatalf("ResourceName(%q) = %q, want %q", tc.input, got, tc.want)
+			}
+		})
+	}
+}
+
 func TestFilterContainersByRestrict(t *testing.T) {
 	containers := []string{"api", "worker", "sidecar"}
 

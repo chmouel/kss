@@ -1,0 +1,13 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: bad-image-test
+spec:
+  pipelineSpec:
+    tasks:
+      - name: invalid-image-task
+        taskSpec:
+          steps:
+            - name: pull-failure
+              image: busybox:non-existent-tag-12345
+              script: echo "This will never run"

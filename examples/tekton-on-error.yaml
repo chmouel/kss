@@ -1,0 +1,21 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: on-error-continue-test
+spec:
+  pipelineSpec:
+    tasks:
+      - name: ignored-failure-task
+        onError: continue
+        taskSpec:
+          steps:
+            - name: fail
+              image: alpine
+              script: exit 1
+      - name: verify-continuation
+        runAfter: ["ignored-failure-task"]
+        taskSpec:
+          steps:
+            - name: report
+              image: alpine
+              script: echo "The previous failure was ignored, I am running!"

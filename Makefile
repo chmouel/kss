@@ -1,4 +1,4 @@
-NAME = kss
+NAMES = kss tkss
 
 all: build
 
@@ -6,7 +6,9 @@ mkdir:
 	mkdir -p bin
 
 build: mkdir
-	go build -o bin/$(NAME) ./cmd/$(NAME)
+	for name in $(NAMES); do \
+		go build -o bin/$$name ./cmd/$$name; \
+	done
 
 sanity: lint format test
 
@@ -28,7 +30,9 @@ coverage:
 
 completions:
 	@mkdir -p completions
-	go run ./cmd/kss --completion bash > completions/kss.bash
-	go run ./cmd/kss --completion zsh > completions/kss.zsh
+	for name in $(NAMES); do \
+		go run ./cmd/$$name --completion bash > completions/$$name.bash; \
+		go run ./cmd/$$name --completion zsh > completions/$$name.zsh; \
+	done
 
 .PHONY: all build lint format test coverage sanity mkdir completions

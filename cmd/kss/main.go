@@ -33,6 +33,10 @@ func main() {
 		os.Exit(0)
 	}
 
+	for i, pod := range args.Pods {
+		args.Pods[i] = util.ResourceName(pod)
+	}
+
 	kctl := "kubectl"
 
 	if args.Namespace != "" {
@@ -40,7 +44,10 @@ func main() {
 	}
 	kubectlBaseArgs := kube.KubectlArgs(args)
 
-	myself := util.Which("kss")
+	myself, err := os.Executable()
+	if err != nil || myself == "" {
+		myself = util.Which("kss")
+	}
 	preview := fmt.Sprintf("%s describe {}", kctl)
 	if myself != "" {
 		// Use preview mode for fzf - compact and clean

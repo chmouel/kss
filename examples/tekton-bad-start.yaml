@@ -1,0 +1,17 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: bad-start-test
+spec:
+  pipelineSpec:
+    tasks:
+      - name: missing-params-task
+        taskSpec:
+          params:
+            - name: REQUIRED_PARAM
+              type: string # No default value provided
+          steps:
+            - name: echo
+              image: alpine
+              script: echo $(params.REQUIRED_PARAM)
+        # Failure: No value is passed for REQUIRED_PARAM here

@@ -4,6 +4,8 @@ I present to you KSS, a refined utility designed to illuminate the current statu
 
 The standard `kubectl get pod` command, while functional, occasionally lacks the immediate depth one requires. Conversely, `kubectl describe pod` can offer an overwhelming abundance of detail that may obscure the pertinent facts. KSS bridges this gap, offering a comprehensive, aesthetically pleasing, and digestible overview of your pod's health, thereby allowing you to diagnose issues with dignity and efficiency.
 
+This repository also contains **TKSS**, a companion utility for Tekton `PipelineRun` inspection. It is intentionally similar in spirit to KSS and uses `kubectl` rather than the Tekton CLI.
+
 <img width="1193" height="847" alt="image" src="https://github.com/user-attachments/assets/c65ac2e8-ba61-4fbe-a72f-f70af4f9814a" />
 
 ## Distinguishing Features
@@ -33,7 +35,7 @@ One may specify a pod—or indeed, multiple pods—as arguments to the KSS comma
 
 To select multiple pods in the interactive view, one needs only to press the `TAB` key. KSS will then proceed to display the details for all selected items.
 
-Please note that the interactive preview attempts to utilize KSS itself to render the information. Should KSS not be found within your system's `PATH`, it will resort to the standard `kubectl describe` command.
+Please note that the interactive preview prefers the currently running KSS executable for its compact render. Should it fail to resolve that executable, it will resort to the standard `kubectl describe` command.
 
 ### Command Line Options
 
@@ -70,6 +72,63 @@ kss
 # browse pods within a specific namespace
 kss -n production
 ```
+
+## TKSS - Tekton PipelineRun Inspection
+
+TKSS offers a familiar workflow for Tekton `PipelineRun` objects, presenting a tidy summary of the run and its TaskRuns, along with optional logs, live updates, and interactive shell access.
+
+### Basic Operation
+
+As with KSS, TKSS will use `fzf` to let you select a PipelineRun when no arguments are provided. You may also pass one or more PipelineRun names directly.
+
+### Command Line Options
+
+```text
+Usage: tkss [OPTIONS] [PIPELINERUN...]
+
+Options:
+  -n, --namespace NAMESPACE    Use namespace
+  -l, --showlog                Show logs of TaskRun containers
+  --maxlines INT               Maximum line when showing logs (default: -1)
+  -w, --watch                  Watch mode (auto-refresh)
+  --watch-interval SECONDS     Watch refresh interval in seconds (default: 2)
+  -s, --shell                  Open an interactive shell in a selected step
+  -f, --follow                 Follow logs for a selected step
+  --explain                    Enable AI explanation for PipelineRun failures
+  --model MODEL                AI model to use (default: gemini-2.5-flash-lite)
+  -p, --persona PERSONA        AI persona: neutral, butler, sergeant, hacker, pirate, genz (default: random)
+  --completion SHELL           Output shell completion code (bash, zsh)
+  -h, --help                   Display the help message
+```
+
+### Examples
+
+```bash
+# Launch the interactive selector
+tkss
+
+# Inspect a specific PipelineRun
+tkss my-pipelinerun
+
+# Inspect a PipelineRun in a namespace
+tkss -n ci my-pipelinerun
+
+# Follow logs for a selected step
+tkss -f
+
+# Open a shell in a selected step
+tkss -s
+
+# Ask Gemini to explain a failed PipelineRun (requires GEMINI_API_KEY)
+tkss my-pipelinerun --explain
+
+# Use a specific persona and model
+tkss my-pipelinerun --explain -p hacker --model gemini-2.5-flash
+```
+
+When using `-s` or `-f`, TKSS will prompt you via `fzf` to select the TaskRun, pod, and step.
+
+When `--explain` is enabled, TKSS gathers PipelineRun JSON, TaskRun JSON, related events, and logs from failed TaskRun pods to provide a concise diagnosis and a suggested fix. It uses the same personas as KSS.
 
 #### Direct Selection
 
@@ -225,12 +284,21 @@ kss --completion bash > /etc/bash_completion.d/kss
 kss --completion zsh > /usr/share/zsh/site-functions/_kss
 ```
 
+TKSS offers equivalent completions:
+
+```bash
+tkss --completion bash > /etc/bash_completion.d/tkss
+# or for zsh
+tkss --completion zsh > /usr/share/zsh/site-functions/_tkss
+```
+
 Completion suggestions include namespaces, pods, and persona names for your convenience.
 
 ### Prerequisites
 
 - **kubectl**: Must be installed and properly configured to communicate with your cluster.
 - **fzf**: Essential for the interactive selection feature.
+- **Tekton CRDs**: Required for TKSS to query `PipelineRun` and `TaskRun` resources.
 - **Go**: Required only if you intend to compile the application from source.
 - **GEMINI_API_KEY**: Required only if you wish to use `--explain` for AI-assisted diagnosis.
 

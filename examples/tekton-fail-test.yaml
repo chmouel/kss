@@ -1,0 +1,22 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: failure-test
+spec:
+  pipelineSpec:
+    tasks:
+      - name: failing-task
+        taskSpec:
+          steps:
+            - name: exit-with-error
+              image: alpine
+              script: |
+                echo "Simulating a failure..."
+                exit 1
+      - name: skip-me
+        runAfter: ["failing-task"]
+        taskSpec:
+          steps:
+            - name: should-not-run
+              image: alpine
+              script: echo "This should not be printed"
