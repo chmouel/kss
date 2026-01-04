@@ -3,15 +3,17 @@ package tekton
 import (
 	"encoding/json"
 	"fmt"
-	"os/exec"
 	"strings"
+
+	"github.com/chmouel/kss/internal/util"
 )
+
+var runner util.Runner = &util.RealRunner{}
 
 // FetchPipelineRun retrieves a PipelineRun via kubectl.
 func FetchPipelineRun(kubectlArgs []string, name string) (PipelineRun, error) {
 	cmdArgs := append(append([]string{}, kubectlArgs...), "get", "pipelinerun", name, "-ojson")
-	cmd := exec.Command("kubectl", cmdArgs...)
-	output, err := cmd.CombinedOutput()
+	output, err := runner.Run("kubectl", cmdArgs...)
 	if err != nil {
 		return PipelineRun{}, fmt.Errorf("could not fetch pipelinerun %s: %s", name, strings.TrimSpace(string(output)))
 	}
@@ -27,8 +29,7 @@ func FetchPipelineRun(kubectlArgs []string, name string) (PipelineRun, error) {
 func FetchTaskRunsForPipelineRun(kubectlArgs []string, pipelineRun string) ([]TaskRun, error) {
 	selector := fmt.Sprintf("tekton.dev/pipelineRun=%s", pipelineRun)
 	cmdArgs := append(append([]string{}, kubectlArgs...), "get", "taskruns", "-l", selector, "-ojson")
-	cmd := exec.Command("kubectl", cmdArgs...)
-	output, err := cmd.CombinedOutput()
+	output, err := runner.Run("kubectl", cmdArgs...)
 	if err != nil {
 		return nil, fmt.Errorf("could not fetch taskruns for pipelinerun %s: %s", pipelineRun, strings.TrimSpace(string(output)))
 	}
@@ -50,8 +51,7 @@ func PodNameForTaskRun(kubectlArgs []string, tr TaskRun) (string, error) {
 	for _, label := range selectors {
 		selector := fmt.Sprintf("%s=%s", label, tr.Metadata.Name)
 		cmdArgs := append(append([]string{}, kubectlArgs...), "get", "pods", "-l", selector, "-o", "jsonpath={.items[0].metadata.name}")
-		cmd := exec.Command("kubectl", cmdArgs...)
-		output, err := cmd.CombinedOutput()
+		output, err := runner.Run("kubectl", cmdArgs...)
 		if err != nil {
 			continue
 		}

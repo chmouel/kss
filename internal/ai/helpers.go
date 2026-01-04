@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os/exec"
 	"strings"
 
 	"github.com/charmbracelet/glamour"
@@ -17,7 +16,10 @@ import (
 
 const aiMaxLogLines = "100"
 
-var errNoCandidates = errors.New("AI returned no candidates. This might be due to Safety Settings or an invalid prompt")
+var (
+	errNoCandidates = errors.New("AI returned no candidates. This might be due to Safety Settings or an invalid prompt")
+	runner          util.Runner = &util.RealRunner{}
+)
 
 func printAIStatus(displayName string) {
 	fmt.Println()
@@ -37,7 +39,7 @@ func aiErrorColor(err error) string {
 
 func fetchEventsJSON(kctl, kind, name string) string {
 	cmdStr := fmt.Sprintf("%s get events --field-selector involvedObject.name=%s --field-selector involvedObject.kind=%s -o json", kctl, name, kind)
-	output, _ := exec.Command("sh", "-c", cmdStr).Output()
+	output, _ := runner.Run("sh", "-c", cmdStr)
 	return string(output)
 }
 

@@ -15,6 +15,8 @@ import (
 	"github.com/chmouel/kss/internal/util"
 )
 
+var runner util.Runner = &util.RealRunner{}
+
 // KubectlArgs constructs basic kubectl arguments including namespace
 func KubectlArgs(args model.Args) []string {
 	if args.Namespace == "" {
@@ -26,8 +28,7 @@ func KubectlArgs(args model.Args) []string {
 // FetchPod retrieves pod details from Kubernetes
 func FetchPod(kubectlArgs []string, pod string) (model.Pod, error) {
 	cmdArgs := append(append([]string{}, kubectlArgs...), "get", "pod", pod, "-ojson")
-	cmd := exec.Command("kubectl", cmdArgs...)
-	output, err := cmd.CombinedOutput()
+	output, err := runner.Run("kubectl", cmdArgs...)
 	if err != nil {
 		return model.Pod{}, fmt.Errorf("could not fetch pod %s: %s", pod, strings.TrimSpace(string(output)))
 	}
@@ -46,10 +47,9 @@ func ShowLog(kctl string, args model.Args, container, pod string, previous bool)
 	if previous {
 		cmdArgs += " -p"
 	}
-	cmd := exec.Command("sh", "-c", cmdArgs)
-	output, err := cmd.CombinedOutput()
+	output, err := runner.Run("sh", "-c", cmdArgs)
 	if err != nil {
-		return "", fmt.Errorf("could not run '%s': %v", cmd.String(), err)
+		return "", fmt.Errorf("could not run '%s': %v", cmdArgs, err)
 	}
 	return strings.TrimSpace(string(output)), nil
 }
