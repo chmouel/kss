@@ -13,6 +13,7 @@ This repository also contains **TKSS**, a companion utility for Tekton
 `PipelineRun` inspection. It is intentionally similar in spirit to KSS and uses
 `kubectl` rather than the Tekton CLI.
 
+<img width="3012" height="982" alt="image" src="https://github.com/user-attachments/assets/631c9660-8ab3-46a0-8a83-384c8f8a9461" />
 <img width="1193" height="847" alt="image" src="https://github.com/user-attachments/assets/c65ac2e8-ba61-4fbe-a72f-f70af4f9814a" />
 
 ## Distinguishing Features
