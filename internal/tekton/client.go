@@ -3,6 +3,7 @@ package tekton
 import (
 	"encoding/json"
 	"fmt"
+	"os/exec"
 	"strings"
 
 	"github.com/chmouel/kss/internal/util"
