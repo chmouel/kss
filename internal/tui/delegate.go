@@ -13,13 +13,13 @@ import (
 var (
 	itemStyle         = lipgloss.NewStyle().PaddingLeft(2)
 	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(0).Foreground(lipgloss.Color("205")).Bold(true) // Pink selection
-	
+
 	// Status Colors
-	statusRunning   = lipgloss.NewStyle().Foreground(lipgloss.Color("220")) // Yellow
-	statusSuccess   = lipgloss.NewStyle().Foreground(lipgloss.Color("42"))  // Green
-	statusFail      = lipgloss.NewStyle().Foreground(lipgloss.Color("196")) // Red
-	statusWaiting   = lipgloss.NewStyle().Foreground(lipgloss.Color("245")) // Gray
-	
+	statusRunning = lipgloss.NewStyle().Foreground(lipgloss.Color("220")) // Yellow
+	statusSuccess = lipgloss.NewStyle().Foreground(lipgloss.Color("42"))  // Green
+	statusFail    = lipgloss.NewStyle().Foreground(lipgloss.Color("196")) // Red
+	statusWaiting = lipgloss.NewStyle().Foreground(lipgloss.Color("245")) // Gray
+
 	// Text Colors
 	dimmedText = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
 )
@@ -40,7 +40,7 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, item list.Ite
 	if podItem, ok := item.(PodItem); ok {
 		title = podItem.title
 		desc = podItem.desc
-		
+
 		// Determine status style and icon for Pod
 		switch podItem.pod.Status.Phase {
 		case "Running", "Succeeded":
@@ -82,19 +82,19 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, item list.Ite
 
 	if index == m.Index() {
 		// Selected State
-		
+
 		// Border accent on the left for selected item
 		selectedBar := lipgloss.NewStyle().Foreground(lipgloss.Color("205")).Render("│ ")
-		
-		fmt.Fprint(w, selectedBar)
-		fmt.Fprint(w, selectedItemStyle.Render(statusIcon + title))
-		fmt.Fprint(w, "\n")
-		fmt.Fprint(w, selectedBar)
-		fmt.Fprint(w, dimmedText.Render("  "+desc))
+
+		_, _ = fmt.Fprint(w, selectedBar)
+		_, _ = fmt.Fprint(w, selectedItemStyle.Render(statusIcon+title))
+		_, _ = fmt.Fprint(w, "\n")
+		_, _ = fmt.Fprint(w, selectedBar)
+		_, _ = fmt.Fprint(w, dimmedText.Render("  "+desc))
 	} else {
 		// Normal State
-		fmt.Fprint(w, itemStyle.Render(statusStyle.Render(statusIcon) + title))
-		fmt.Fprint(w, "\n")
-		fmt.Fprint(w, itemStyle.Render(dimmedText.Render("  "+desc)))
+		_, _ = fmt.Fprint(w, itemStyle.Render(statusStyle.Render(statusIcon)+title))
+		_, _ = fmt.Fprint(w, "\n")
+		_, _ = fmt.Fprint(w, itemStyle.Render(dimmedText.Render("  "+desc)))
 	}
 }

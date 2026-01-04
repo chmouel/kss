@@ -20,20 +20,14 @@ func ExplainPod(podObj model.Pod, kctl, podName string, args model.Args) {
 	displayName := personaDisplayName(args.Persona)
 	printAIStatus(displayName)
 
-	// 1. Gather Context
-
 	podJSON, _ := json.MarshalIndent(podObj, "", "  ")
 
-	// 2. Gather Events
 	eventsOutput := fetchEventsJSON(kctl, "Pod", podName)
 
-	// 3. Gather Logs (from failing containers)
 	logs := collectPodLogsForAI(kctl, args, podObj, podName)
 
-	// 4. Construct Persona-specific instructions
 	personaInstructions := personaInstructions(args.Persona)
 
-	// 5. Construct Prompt
 	prompt := fmt.Sprintf(`%s
 Your task is to diagnose a pod failure.
 
@@ -62,7 +56,6 @@ Instructions:
 		personaInstructions, podName, podObj.Metadata.Namespace, podObj.Status.Phase,
 		string(podJSON), eventsOutput, logs)
 
-	// 6. Call Gemini API
 	explanation, err := callGemini(apiKey, args.Model, prompt)
 	if err != nil {
 		printAIError(err.Error(), aiErrorColor(err))

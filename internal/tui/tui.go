@@ -54,8 +54,6 @@ const (
 	minListWidth    = 30
 	minDetailsWidth = 40
 	minHeight       = 10
-	borderWidth     = 2
-	paddingWidth    = 4
 )
 
 var (
@@ -65,8 +63,6 @@ var (
 			Foreground(lipgloss.Color("#FAFAFA")).
 			Background(lipgloss.Color("#7D56F4")).
 			Padding(0, 1)
-
-	docStyle = lipgloss.NewStyle().Padding(1, 2)
 
 	// Overview Styles
 	overviewHeaderStyle = lipgloss.NewStyle().
@@ -119,9 +115,6 @@ var (
 				Foreground(lipgloss.Color("86")). // Cyan
 				Bold(true).
 				MarginBottom(1)
-
-	doctorFindingStyle = lipgloss.NewStyle().
-				MarginLeft(2)
 
 	doctorRemediationStyle = lipgloss.NewStyle().
 				Foreground(lipgloss.Color("242")). // Gray
@@ -863,23 +856,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.focusedPane == paneList {
 			m.list, cmd = m.list.Update(msg)
 			cmds = append(cmds, cmd)
-			
+
 			// If selection changed, reload tab content
-			// We can't easily detect selection change without storing prev selection, 
+			// We can't easily detect selection change without storing prev selection,
 			// but triggering load is safe (it's async).
-			// Actually, list update might not have changed selection yet. 
+			// Actually, list update might not have changed selection yet.
 			// But for simplicity, we can let the user press enter or just re-fetch on tab switch.
-			// Better: Check if list item changed? 
-			// For now, let's just update the list. The viewport content updates when switching tabs 
-			// or when explicitly requested. 
+			// Better: Check if list item changed?
+			// For now, let's just update the list. The viewport content updates when switching tabs
+			// or when explicitly requested.
 			// To make it responsive, we should update content on selection change.
 			// But list.Update doesn't return "selection changed" event.
 			// We can check m.list.SelectedItem() before and after.
-			
+
 			// However, keeping it simple: selecting an item is "Enter" or just navigating?
-			// The original code updated content on tab switch or init. 
+			// The original code updated content on tab switch or init.
 			// Let's stick to that for now to avoid excessive fetches while scrolling.
-			
+
 		} else {
 			// Details Pane Input
 			switch m.activeTab {
@@ -892,7 +885,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			cmds = append(cmds, cmd)
 		}
-		
+
 		return m, tea.Batch(cmds...)
 
 	case tea.WindowSizeMsg:
@@ -916,7 +909,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// Calculate details width (remaining space minus borders)
 		// Border takes 2 width (left+right)
-		detailsWidth := m.width - listWidth - 2 
+		detailsWidth := m.width - listWidth - 2
 		if detailsWidth < minDetailsWidth {
 			detailsWidth = minDetailsWidth
 		}
@@ -962,7 +955,6 @@ func (m Model) View() string {
 		return "\n  Terminal too small. Please resize."
 	}
 
-	// 1. Render List (Sidebar)
 	listView := m.list.View()
 
 	// Determine border color based on focus
@@ -973,7 +965,6 @@ func (m Model) View() string {
 		borderColor = lipgloss.Color("240") // Dim gray (inactive)
 	}
 
-	// 2. Render Tabs
 	tabs := []string{"Overview", "Logs", "Events", "Doctor"}
 	var renderedTabs []string
 
@@ -996,36 +987,32 @@ func (m Model) View() string {
 
 		// Add number prefix
 		content := fmt.Sprintf("%d:%s", i+1, t)
-		
+
 		if isFirst {
 			renderedTabs = append(renderedTabs, style.Render(content))
 		} else {
 			renderedTabs = append(renderedTabs, style.Render(" "+content))
 		}
 	}
-	
-	// Create the tab bar row
-	tabBar := lipgloss.JoinHorizontal(lipgloss.Top, renderedTabs...)
-	
-	// 3. Render Details Content
-	detailsContent := m.renderDetails()
-	
-	// Wrap details in the rounded border box
-	// Ensure the box fills the remaining height
+
+		// Create the tab bar row
+		tabBar := lipgloss.JoinHorizontal(lipgloss.Top, renderedTabs...)
+		
+		detailsContent := m.renderDetails()
+		
+		// Wrap details in the rounded border box	// Ensure the box fills the remaining height
 	// Available height = m.height
 	// Tab bar = 1 line
 	// Border = 2 lines (top/bottom)
 	// Content height should be: m.height - 1 (tabs) - 2 (borders) - 1 (safety) = m.height - 4
 	detailsBox := detailsStyle.
 		Width(m.viewport.Width). // viewport width already accounts for border padding in Update
-		Height(m.height - 4).    
+		Height(m.height - 4).
 		BorderForeground(borderColor).
 		Render(detailsContent)
 
-	// 4. Combine Tabs + Details Box
 	rightSide := lipgloss.JoinVertical(lipgloss.Left, tabBar, detailsBox)
 
-	// 5. Join List + Right Side
 	mainView := lipgloss.JoinHorizontal(lipgloss.Top, listView, rightSide)
 
 	return appStyle.Render(mainView)

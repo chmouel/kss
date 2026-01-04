@@ -156,7 +156,6 @@ func TestUpdate_Messages(t *testing.T) {
 	m = updatedModel.(Model)
 	m.ready = true
 
-	// 1. ResourceMsg
 	pod := model.Pod{Metadata: model.PodMetadata{Name: "test-pod"}}
 	items := []list.Item{NewPodItem(pod)}
 	msg := ResourceMsg{items: items}
@@ -170,7 +169,6 @@ func TestUpdate_Messages(t *testing.T) {
 		t.Errorf("Expected 1 item in list, got %d", len(m.list.Items()))
 	}
 
-	// 2. LogsMsg
 	logsContent := "Log content here"
 	logsMsg := LogsMsg{content: logsContent}
 	
@@ -186,7 +184,6 @@ func TestUpdate_Messages(t *testing.T) {
 		t.Error("Expected logs content in viewport")
 	}
 
-	// 3. EventsMsg
 	eventsContent := "Events happened"
 	eventsMsg := EventsMsg{content: eventsContent}
 	
@@ -198,7 +195,6 @@ func TestUpdate_Messages(t *testing.T) {
 		t.Error("Expected events content in events viewport")
 	}
 
-	// 4. DoctorMsg
 	doctorResults := &DoctorResults{
 		ResourceName: "test-pod",
 		Findings: []DoctorFinding{

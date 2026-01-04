@@ -28,14 +28,12 @@ func AnalyzeContainerState(container model.ContainerStatus) []string {
 		}
 	}
 
-	// 1. Check Exit Codes (Current or Last)
 	if container.State.Terminated != nil {
 		checkTerminated(container.State.Terminated)
 	} else if container.LastState != nil && container.LastState.Terminated != nil {
 		checkTerminated(container.LastState.Terminated)
 	}
 
-	// 2. Check Waiting Reasons
 	if container.State.Waiting != nil {
 		reason := container.State.Waiting.Reason
 		switch reason {
@@ -84,7 +82,6 @@ func DiagnosePod(podObj model.Pod, kctl, podName string, args model.Args) {
 	diagnoseContainer := func(container model.ContainerStatus, isInit bool) {
 		issues := AnalyzeContainerState(container)
 
-		// 3. Log Analysis (if we can get them)
 		if container.State.Terminated != nil || container.RestartCount > 0 || (container.State.Waiting != nil && container.State.Waiting.Reason == "CrashLoopBackOff") {
 			// Get some logs to check for common patterns
 			origMaxLines := args.MaxLines
