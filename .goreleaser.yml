@@ -114,10 +114,12 @@ universal_binaries:
     ids:
       - kss
     replace: true
+    name_template: "kss"
   - id: tkss-universal
     ids:
       - tkss
     replace: true
+    name_template: "tkss"
 
 aurs:
   - name: kss-bin
