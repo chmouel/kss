@@ -73,7 +73,10 @@ checksum:
   name_template: "checksums.txt"
 
 nfpms:
-  - file_name_template: "{{ .ConventionalFileName }}"
+  - ids:
+      - kss
+      - tkss
+    file_name_template: "{{ .ConventionalFileName }}"
     homepage: https://github.com/chmouel/kss
     description: "kss - Enhanced Kubernetes Pod Inspection"
     maintainer: Chmouel Boudjnah <chmouel@chmouel.com>
@@ -84,8 +87,6 @@ nfpms:
       - rpm
     bindir: /usr/bin
     contents:
-      - src: tkss
-        dst: /usr/bin/tkss
       - src: completions/kss.bash
         dst: /usr/share/bash-completion/completions/kss
       - src: completions/kss.zsh
