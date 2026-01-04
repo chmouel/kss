@@ -995,12 +995,12 @@ func (m Model) View() string {
 		}
 	}
 
-		// Create the tab bar row
-		tabBar := lipgloss.JoinHorizontal(lipgloss.Top, renderedTabs...)
-		
-		detailsContent := m.renderDetails()
-		
-		// Wrap details in the rounded border box	// Ensure the box fills the remaining height
+	// Create the tab bar row
+	tabBar := lipgloss.JoinHorizontal(lipgloss.Top, renderedTabs...)
+
+	detailsContent := m.renderDetails()
+
+	// Wrap details in the rounded border box	// Ensure the box fills the remaining height
 	// Available height = m.height
 	// Tab bar = 1 line
 	// Border = 2 lines (top/bottom)

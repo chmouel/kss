@@ -110,8 +110,12 @@ changelog:
       - Brew cask update
 
 universal_binaries:
-  - ids:
+  - id: kss-universal
+    ids:
       - kss
+    replace: true
+  - id: tkss-universal
+    ids:
       - tkss
     replace: true
 

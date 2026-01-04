@@ -38,7 +38,7 @@ func TestUpdate_Navigation_Tabs(t *testing.T) {
 	// Test Tab key cycling
 	// Initial: 0 (Overview)
 	msg := tea.KeyMsg{Type: tea.KeyTab}
-	
+
 	// 0 -> 1
 	updatedModel, _ := m.Update(msg)
 	m = updatedModel.(Model)
@@ -72,7 +72,7 @@ func TestUpdate_Navigation_Tabs(t *testing.T) {
 func TestUpdate_Navigation_Panes(t *testing.T) {
 	m := NewModel("pod", "default", []string{})
 	m.ready = true
-	
+
 	// Initial: paneList (0)
 	if m.focusedPane != paneList {
 		t.Errorf("Expected initial focus on paneList, got %d", m.focusedPane)
@@ -97,7 +97,7 @@ func TestUpdate_Navigation_Panes(t *testing.T) {
 
 func TestUpdate_WindowResize(t *testing.T) {
 	m := NewModel("pod", "default", []string{})
-	
+
 	width := 100
 	height := 50
 	msg := tea.WindowSizeMsg{Width: width, Height: height}
@@ -159,24 +159,24 @@ func TestUpdate_Messages(t *testing.T) {
 	pod := model.Pod{Metadata: model.PodMetadata{Name: "test-pod"}}
 	items := []list.Item{NewPodItem(pod)}
 	msg := ResourceMsg{items: items}
-	
+
 	var cmd tea.Cmd
 	updatedModel, cmd = m.Update(msg)
 	_ = cmd
 	m = updatedModel.(Model)
-	
+
 	if len(m.list.Items()) != 1 {
 		t.Errorf("Expected 1 item in list, got %d", len(m.list.Items()))
 	}
 
 	logsContent := "Log content here"
 	logsMsg := LogsMsg{content: logsContent}
-	
+
 	// Switch to Logs tab first to ensure Viewport is updated
 	m.activeTab = tabLogs
 	updatedModel, _ = m.Update(logsMsg)
 	m = updatedModel.(Model)
-	
+
 	// Check content indirectly via View() or directly if accessible?
 	// The Viewport doesn't expose Content directly easily, but we can check if View() contains it.
 	// Actually Viewport.View() returns the rendered content.
@@ -186,11 +186,11 @@ func TestUpdate_Messages(t *testing.T) {
 
 	eventsContent := "Events happened"
 	eventsMsg := EventsMsg{content: eventsContent}
-	
+
 	m.activeTab = tabEvents
 	updatedModel, _ = m.Update(eventsMsg)
 	m = updatedModel.(Model)
-	
+
 	if !strings.Contains(m.eventsViewport.View(), eventsContent) {
 		t.Error("Expected events content in events viewport")
 	}
@@ -203,11 +203,11 @@ func TestUpdate_Messages(t *testing.T) {
 		AnalyzedAt: time.Now(),
 	}
 	doctorMsg := DoctorMsg{results: doctorResults}
-	
+
 	m.activeTab = tabDoctor
 	updatedModel, _ = m.Update(doctorMsg)
 	m = updatedModel.(Model)
-	
+
 	if m.doctorResults != doctorResults {
 		t.Error("Expected doctorResults to be set")
 	}
@@ -254,17 +254,17 @@ func TestView_Rendering(t *testing.T) {
 func TestItemDelegate_Render(t *testing.T) {
 	d := itemDelegate{}
 	l := list.New([]list.Item{}, d, 0, 0)
-	
+
 	// Test Pod Render
 	pod := model.Pod{
 		Metadata: model.PodMetadata{Name: "pod-1"},
 		Status:   model.PodStatus{Phase: "Running"},
 	}
 	item := NewPodItem(pod)
-	
+
 	var buf strings.Builder
 	d.Render(&buf, l, 0, item)
-	
+
 	output := buf.String()
 	if !strings.Contains(output, "pod-1") {
 		t.Error("Delegate render should contain pod name")
@@ -282,11 +282,11 @@ func TestItemDelegate_Render(t *testing.T) {
 		},
 	}
 	prItem := NewPipelineRunItem(pr)
-	
+
 	buf.Reset()
 	d.Render(&buf, l, 1, prItem)
 	output = buf.String()
-	
+
 	if !strings.Contains(output, "pr-1") {
 		t.Error("Delegate render should contain pipelinerun name")
 	}
