@@ -40,6 +40,23 @@ func FetchPod(kubectlArgs []string, pod string) (model.Pod, error) {
 	return podObj, nil
 }
 
+// ListPods retrieves all pods in the current namespace
+func ListPods(kubectlArgs []string) ([]model.Pod, error) {
+	cmdArgs := append(append([]string{}, kubectlArgs...), "get", "pods", "-ojson")
+	cmd := exec.Command("kubectl", cmdArgs...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("could not list pods: %s", strings.TrimSpace(string(output)))
+	}
+
+	var podList model.PodList
+	if err := json.Unmarshal(output, &podList); err != nil {
+		return nil, fmt.Errorf("could not parse pod list: %w", err)
+	}
+
+	return podList.Items, nil
+}
+
 // ShowLog retrieves and returns container logs using kubectl
 func ShowLog(kctl string, args model.Args, container, pod string, previous bool) (string, error) {
 	cmdArgs := fmt.Sprintf("%s logs --tail=%s %s -c%s", kctl, args.MaxLines, pod, container)
