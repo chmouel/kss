@@ -26,6 +26,22 @@ func FetchPipelineRun(kubectlArgs []string, name string) (PipelineRun, error) {
 	return pr, nil
 }
 
+// ListPipelineRuns retrieves all PipelineRuns in the current namespace.
+func ListPipelineRuns(kubectlArgs []string) ([]PipelineRun, error) {
+	cmdArgs := append(append([]string{}, kubectlArgs...), "get", "pipelineruns", "-ojson")
+	cmd := exec.Command("kubectl", cmdArgs...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("could not list pipelineruns: %s", strings.TrimSpace(string(output)))
+	}
+
+	var list PipelineRunList
+	if err := json.Unmarshal(output, &list); err != nil {
+		return nil, fmt.Errorf("could not parse pipelineruns list: %w", err)
+	}
+	return list.Items, nil
+}
+
 // FetchTaskRunsForPipelineRun retrieves TaskRuns labeled for a PipelineRun.
 func FetchTaskRunsForPipelineRun(kubectlArgs []string, pipelineRun string) ([]TaskRun, error) {
 	selector := fmt.Sprintf("tekton.dev/pipelineRun=%s", pipelineRun)

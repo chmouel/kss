@@ -12,10 +12,12 @@ import (
 	"syscall"
 	"time"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/chmouel/kss/internal/kube"
 	"github.com/chmouel/kss/internal/model"
 	"github.com/chmouel/kss/internal/tekton"
 	"github.com/chmouel/kss/internal/tkss"
+	"github.com/chmouel/kss/internal/tui"
 	"github.com/chmouel/kss/internal/util"
 )
 
@@ -53,6 +55,23 @@ func main() {
 		}
 		previewPipelineRun(args, args.PipelineRuns[0], kctl, kubectlArgs)
 		return
+	}
+
+	if len(args.PipelineRuns) == 0 && !args.Shell && !args.Follow && !args.Watch {
+		m := tui.NewModel("pipelinerun", args.Namespace, kubectlArgs)
+		p := tea.NewProgram(m)
+		finalModel, err := p.Run()
+		if err != nil {
+			fmt.Printf("Error running TUI: %v\n", err)
+			os.Exit(1)
+		}
+
+		tm := finalModel.(tui.Model)
+		if tm.ChosenItem != nil {
+			args.PipelineRuns = []string{tm.ChosenItem.FilterValue()}
+		} else {
+			return
+		}
 	}
 
 	pipelineRuns, err := resolvePipelineRuns(args, kctl)

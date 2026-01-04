@@ -14,8 +14,10 @@ import (
 	"syscall"
 	"time"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/chmouel/kss/internal/kube"
 	"github.com/chmouel/kss/internal/model"
+	"github.com/chmouel/kss/internal/tui"
 	"github.com/chmouel/kss/internal/ui"
 	"github.com/chmouel/kss/internal/util"
 )
@@ -99,6 +101,25 @@ func main() {
 			os.Exit(1)
 		}
 		return
+	}
+
+	if len(args.Pods) == 0 {
+		m := tui.NewModel("pod", args.Namespace, kubectlBaseArgs)
+		p := tea.NewProgram(m)
+		finalModel, err := p.Run()
+		if err != nil {
+			fmt.Printf("Error running TUI: %v\n", err)
+			os.Exit(1)
+		}
+
+		tm := finalModel.(tui.Model)
+		if tm.ChosenItem != nil {
+			// Extract pod name from the chosen item and continue to printing
+			podName := tm.ChosenItem.FilterValue()
+			args.Pods = []string{podName}
+		} else {
+			return
+		}
 	}
 
 	queryArgs := ""

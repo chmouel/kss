@@ -120,6 +120,11 @@ type Pod struct {
 	Spec     PodSpec     `json:"spec,omitempty"`
 }
 
+// PodList represents a list of Pods.
+type PodList struct {
+	Items []Pod `json:"items"`
+}
+
 // PodSpec represents the spec field of a pod, mostly used for container info.
 type PodSpec struct {
 	Containers         []ContainerSpec `json:"containers,omitempty"`

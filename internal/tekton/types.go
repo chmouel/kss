@@ -46,6 +46,11 @@ type PipelineRun struct {
 	Status   PipelineRunStatus `json:"status,omitempty"`
 }
 
+// PipelineRunList wraps a list of PipelineRuns.
+type PipelineRunList struct {
+	Items []PipelineRun `json:"items"`
+}
+
 // TaskRunStatus captures TaskRun status fields.
 type TaskRunStatus struct {
 	Conditions     []Condition `json:"conditions,omitempty"`
