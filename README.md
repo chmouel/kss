@@ -11,7 +11,7 @@ This repository also contains **TKSS**, a companion utility for Tekton `Pipeline
 ## Distinguishing Features
 
 - **Refined User Interface**: Presents data with elegant color-coding, borders, and a clear visual hierarchy.
-- **Interactive Selection**: Utilizes [fzf](https://github.com/junegunn/fzf) to provide a sophisticated interactive search with live previews.
+- **Interactive Dashboard**: A rich TUI (Terminal User Interface) for browsing pods with integrated tabs for Logs, Events, and Doctor analysis.
 - **Continuous Monitoring**: Offers a "Watch mode" to observe the real-time status of your deployments.
 - **Doctor Analysis**: Heuristic diagnosis for common failure modes, with log pattern detection to hasten triage.
 - **AI Explanations (Optional)**: When enabled, it consults Gemini to provide a concise diagnosis and a suggested remedy.
@@ -31,11 +31,11 @@ This repository also contains **TKSS**, a companion utility for Tekton `Pipeline
 
 ### Basic Operation
 
-One may specify a pod—or indeed, multiple pods—as arguments to the KSS command. Should you decline to provide an argument, the application will graciously launch the interactive selector (via `fzf`), allowing you to choose your desired pod from the list. If only a single pod is present, KSS will select it automatically for your convenience.
+One may specify a pod—or indeed, multiple pods—as arguments to the KSS command. Should you decline to provide an argument, the application will launch its interactive TUI dashboard. This dashboard allows you to browse pods, view their details, inspect logs, analyze events, and run doctor diagnostics—all within a unified interface.
 
-To select multiple pods in the interactive view, one needs only to press the `TAB` key. KSS will then proceed to display the details for all selected items.
+Pressing `Enter` on a selected pod will exit the dashboard and display the comprehensive KSS report for that pod in your terminal.
 
-Please note that the interactive preview prefers the currently running KSS executable for its compact render. Should it fail to resolve that executable, it will resort to the standard `kubectl describe` command.
+For specific operations like shell access (`-s`), KSS continues to utilize `fzf` for quick selection if no pod is specified.
 
 ### Command Line Options
 
@@ -79,7 +79,9 @@ TKSS offers a familiar workflow for Tekton `PipelineRun` objects, presenting a t
 
 ### Basic Operation
 
-As with KSS, TKSS will use `fzf` to let you select a PipelineRun when no arguments are provided. You may also pass one or more PipelineRun names directly.
+As with KSS, TKSS launches a rich TUI dashboard when no arguments are provided. You can browse PipelineRuns, inspect their status, view logs across TaskRuns, and analyze events. Pressing `Enter` selects the PipelineRun and outputs the detailed report.
+
+You may also pass one or more PipelineRun names directly.
 
 ### Command Line Options
 
