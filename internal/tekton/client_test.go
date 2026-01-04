@@ -25,9 +25,9 @@ func TestFetchPipelineRun(t *testing.T) {
 		mock := &MockRunner{
 			Response: []byte(`{"metadata":{"name":"pr-1","namespace":"ns"},"spec":{"pipelineRef":{"name":"p-1"}}}`),
 		}
-		origRunner := runner
-		runner = mock
-		defer func() { runner = origRunner }()
+		origRunner := Runner
+		Runner = mock
+		defer func() { Runner = origRunner }()
 
 		pr, err := FetchPipelineRun([]string{"-n", "ns"}, "pr-1")
 		if err != nil {
@@ -48,9 +48,9 @@ func TestFetchPipelineRun(t *testing.T) {
 		mock := &MockRunner{
 			Err: errors.New("command failed"),
 		}
-		origRunner := runner
-		runner = mock
-		defer func() { runner = origRunner }()
+		origRunner := Runner
+		Runner = mock
+		defer func() { Runner = origRunner }()
 
 		_, err := FetchPipelineRun(nil, "pr-1")
 		if err == nil {
@@ -65,9 +65,9 @@ func TestFetchPipelineRun(t *testing.T) {
 		mock := &MockRunner{
 			Response: []byte(`invalid json`),
 		}
-		origRunner := runner
-		runner = mock
-		defer func() { runner = origRunner }()
+		origRunner := Runner
+		Runner = mock
+		defer func() { Runner = origRunner }()
 
 		_, err := FetchPipelineRun(nil, "pr-1")
 		if err == nil {
@@ -84,9 +84,9 @@ func TestFetchTaskRunsForPipelineRun(t *testing.T) {
 		mock := &MockRunner{
 			Response: []byte(`{"items":[{"metadata":{"name":"tr-1"}}]}`),
 		}
-		origRunner := runner
-		runner = mock
-		defer func() { runner = origRunner }()
+		origRunner := Runner
+		Runner = mock
+		defer func() { Runner = origRunner }()
 
 		trs, err := FetchTaskRunsForPipelineRun([]string{"-n", "ns"}, "pr-1")
 		if err != nil {
@@ -99,9 +99,9 @@ func TestFetchTaskRunsForPipelineRun(t *testing.T) {
 
 	t.Run("command error", func(t *testing.T) {
 		mock := &MockRunner{Err: errors.New("fail")}
-		origRunner := runner
-		runner = mock
-		defer func() { runner = origRunner }()
+		origRunner := Runner
+		Runner = mock
+		defer func() { Runner = origRunner }()
 
 		_, err := FetchTaskRunsForPipelineRun(nil, "pr-1")
 		if err == nil {
@@ -129,9 +129,9 @@ func TestPodNameForTaskRun(t *testing.T) {
 		mock := &MockRunner{
 			Response: []byte("pod-looked-up"),
 		}
-		origRunner := runner
-		runner = mock
-		defer func() { runner = origRunner }()
+		origRunner := Runner
+		Runner = mock
+		defer func() { Runner = origRunner }()
 
 		got, err := PodNameForTaskRun(nil, tr)
 		if err != nil {
@@ -147,9 +147,9 @@ func TestPodNameForTaskRun(t *testing.T) {
 		mock := &MockRunner{
 			Err: errors.New("not found"),
 		}
-		origRunner := runner
-		runner = mock
-		defer func() { runner = origRunner }()
+		origRunner := Runner
+		Runner = mock
+		defer func() { Runner = origRunner }()
 
 		_, err := PodNameForTaskRun(nil, tr)
 		if err == nil {

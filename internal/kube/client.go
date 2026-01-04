@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"strconv"
@@ -15,7 +14,8 @@ import (
 	"github.com/chmouel/kss/internal/util"
 )
 
-var runner util.Runner = &util.RealRunner{}
+// Runner is the command runner used by the kube package.
+var Runner util.Runner = &util.RealRunner{}
 
 // KubectlArgs constructs basic kubectl arguments including namespace
 func KubectlArgs(args model.Args) []string {
@@ -28,7 +28,7 @@ func KubectlArgs(args model.Args) []string {
 // FetchPod retrieves pod details from Kubernetes
 func FetchPod(kubectlArgs []string, pod string) (model.Pod, error) {
 	cmdArgs := append(append([]string{}, kubectlArgs...), "get", "pod", pod, "-ojson")
-	output, err := runner.Run("kubectl", cmdArgs...)
+	output, err := Runner.Run("kubectl", cmdArgs...)
 	if err != nil {
 		return model.Pod{}, fmt.Errorf("could not fetch pod %s: %s", pod, strings.TrimSpace(string(output)))
 	}
@@ -47,7 +47,7 @@ func ShowLog(kctl string, args model.Args, container, pod string, previous bool)
 	if previous {
 		cmdArgs += " -p"
 	}
-	output, err := runner.Run("sh", "-c", cmdArgs)
+	output, err := Runner.Run("sh", "-c", cmdArgs)
 	if err != nil {
 		return "", fmt.Errorf("could not run '%s': %v", cmdArgs, err)
 	}
@@ -164,10 +164,8 @@ var shellCandidates = []string{
 
 func probeShell(kubectlArgs []string, pod, container, shell string) bool {
 	cmdArgs := append(append([]string{}, kubectlArgs...), "exec", pod, "-c", container, "--", shell, "-c", "exit 0")
-	cmd := exec.Command("kubectl", cmdArgs...)
-	cmd.Stdout = io.Discard
-	cmd.Stderr = io.Discard
-	return cmd.Run() == nil
+	_, err := Runner.Run("kubectl", cmdArgs...)
+	return err == nil
 }
 
 func pickShell(kubectlArgs []string, pod, container string) (string, error) {

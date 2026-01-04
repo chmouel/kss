@@ -20,9 +20,9 @@ func (m *MockRunner) Run(name string, args ...string) ([]byte, error) {
 
 func TestFetchEventsJSON(t *testing.T) {
 	mock := &MockRunner{Response: []byte("{}")}
-	origRunner := runner
-	runner = mock
-	defer func() { runner = origRunner }()
+	origRunner := Runner
+	Runner = mock
+	defer func() { Runner = origRunner }()
 
 	got := fetchEventsJSON("kubectl", "Pod", "my-pod")
 	if got != "{}" {

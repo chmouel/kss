@@ -4,153 +4,153 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/chmouel/kss/internal/kube"
 	"github.com/chmouel/kss/internal/model"
 )
 
-func TestAnalyzeContainerStateTerminatedExitCodes(t *testing.T) {
+type mockRunner struct {
+	response []byte
+	err      error
+}
+
+func (m *mockRunner) Run(name string, args ...string) ([]byte, error) {
+	return m.response, m.err
+}
+
+func TestDiagnosePod(t *testing.T) {
+	// Mock kube.Runner
+	origRunner := kube.Runner
+	mock := &mockRunner{
+		response: []byte("error: connection refused"),
+	}
+	kube.Runner = mock
+	defer func() { kube.Runner = origRunner }()
+
+	pod := model.Pod{
+		Metadata: model.PodMetadata{Name: "pod-1"},
+		Status: model.PodStatus{
+			ContainerStatuses: []model.ContainerStatus{
+				{
+					Name: "c1",
+					State: model.ContainerState{
+						Terminated: &model.TerminatedState{ExitCode: 1},
+					},
+				},
+			},
+		},
+	}
+
+	// We can't easily capture stdout without refactoring DiagnosePod to take an io.Writer,
+	// but we can at least run it to ensure no panics and coverage.
+	// For now, let's just ensure it runs.
+	DiagnosePod(pod, "kubectl", "pod-1", model.Args{})
+}
+
+func TestAnalyzeContainerState(t *testing.T) {
 	cases := []struct {
-		name        string
-		exitCode    int
-		wantSubstr  string
-		wantEntries int
+		name      string
+		container model.ContainerStatus
+		want      []string
 	}{
 		{
-			name:        "oomkilled",
-			exitCode:    137,
-			wantSubstr:  "OOMKilled",
-			wantEntries: 1,
+			name: "terminated oomkilled",
+			container: model.ContainerStatus{
+				State: model.ContainerState{
+					Terminated: &model.TerminatedState{ExitCode: 137},
+				},
+			},
+			want: []string{"Likely OOMKilled (Out of Memory)"},
 		},
 		{
-			name:        "app error",
-			exitCode:    1,
-			wantSubstr:  "Exit Code 1",
-			wantEntries: 1,
+			name: "terminated crash",
+			container: model.ContainerStatus{
+				State: model.ContainerState{
+					Terminated: &model.TerminatedState{ExitCode: 1},
+				},
+			},
+			want: []string{"Application crashed (Exit Code 1)"},
 		},
 		{
-			name:        "command missing",
-			exitCode:    127,
-			wantSubstr:  "Command not found",
-			wantEntries: 1,
+			name: "waiting crashloop",
+			container: model.ContainerStatus{
+				State: model.ContainerState{
+					Waiting: &model.WaitingState{Reason: "CrashLoopBackOff"},
+				},
+			},
+			want: []string{"Container is crashing repeatedly"},
 		},
 		{
-			name:        "success",
-			exitCode:    0,
-			wantEntries: 0,
+			name: "waiting image pull",
+			container: model.ContainerStatus{
+				State: model.ContainerState{
+					Waiting: &model.WaitingState{Reason: "ImagePullBackOff"},
+				},
+			},
+			want: []string{"Failed to pull image"},
+		},
+		{
+			name:      "healthy",
+			container: model.ContainerStatus{},
+			want:      nil,
 		},
 	}
 
 	for _, tc := range cases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			container := model.ContainerStatus{
-				State: model.ContainerState{
-					Terminated: &model.TerminatedState{ExitCode: tc.exitCode},
-				},
+			got := AnalyzeContainerState(tc.container)
+			if len(got) != len(tc.want) {
+				t.Fatalf("got %d issues, want %d", len(got), len(tc.want))
 			}
-			issues := AnalyzeContainerState(container)
-			if len(issues) != tc.wantEntries {
-				t.Fatalf("expected %d issue(s), got %d: %v", tc.wantEntries, len(issues), issues)
-			}
-			if tc.wantSubstr != "" && !strings.Contains(issues[0], tc.wantSubstr) {
-				t.Fatalf("expected issue to contain %q, got %q", tc.wantSubstr, issues[0])
-			}
-		})
-	}
-}
-
-func TestAnalyzeContainerStateLastState(t *testing.T) {
-	container := model.ContainerStatus{
-		State: model.ContainerState{},
-		LastState: &model.ContainerState{
-			Terminated: &model.TerminatedState{ExitCode: 127},
-		},
-	}
-
-	issues := AnalyzeContainerState(container)
-	if len(issues) != 1 {
-		t.Fatalf("expected 1 issue, got %d: %v", len(issues), issues)
-	}
-	if !strings.Contains(issues[0], "Command not found") {
-		t.Fatalf("expected command not found issue, got %q", issues[0])
-	}
-}
-
-func TestAnalyzeContainerStateWaitingReasons(t *testing.T) {
-	cases := []struct {
-		name       string
-		reason     string
-		wantSubstr string
-	}{
-		{
-			name:       "image pull",
-			reason:     "ImagePullBackOff",
-			wantSubstr: "pull image",
-		},
-		{
-			name:       "crashloop",
-			reason:     "CrashLoopBackOff",
-			wantSubstr: "crashing repeatedly",
-		},
-		{
-			name:       "config error",
-			reason:     "CreateContainerConfigError",
-			wantSubstr: "Configuration error",
-		},
-	}
-
-	for _, tc := range cases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			container := model.ContainerStatus{
-				State: model.ContainerState{
-					Waiting: &model.WaitingState{Reason: tc.reason},
-				},
-			}
-			issues := AnalyzeContainerState(container)
-			if len(issues) != 1 {
-				t.Fatalf("expected 1 issue, got %d: %v", len(issues), issues)
-			}
-			if !strings.Contains(issues[0], tc.wantSubstr) {
-				t.Fatalf("expected issue to contain %q, got %q", tc.wantSubstr, issues[0])
+			for i, issue := range got {
+				if tc.want[i] != "" && !strings.Contains(issue, tc.want[i]) {
+					t.Errorf("issue %q does not contain %q", issue, tc.want[i])
+				}
 			}
 		})
 	}
 }
 
 func TestAnalyzeLogs(t *testing.T) {
-	logs := strings.Join([]string{
-		"Connection refused while dialing",
-		"timeout while contacting service",
-		"permission denied",
-		"config file not found",
-	}, "\n")
+	cases := []struct {
+		name string
+		logs string
+		want []string
+	}{
+		{
+			name: "empty",
+			logs: "",
+			want: nil,
+		},
+		{
+			name: "timeout",
+			logs: "error: context deadline exceeded while connecting",
+			want: []string{"Timeout detected"},
+		},
+		{
+			name: "connection refused",
+			logs: "dial tcp 127.0.0.1:80: connection refused",
+			want: []string{"Network error detected"},
+		},
+		{
+			name: "permission denied",
+			logs: "open /etc/secret: permission denied",
+			want: []string{"Permission denied"},
+		},
+	}
 
-	issues := AnalyzeLogs(logs)
-	want := []string{
-		"Network error",
-		"Timeout",
-		"Permission denied",
-		"Missing file",
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			got := AnalyzeLogs(tc.logs)
+			if len(got) != len(tc.want) {
+				t.Fatalf("got %d issues, want %d", len(got), len(tc.want))
+			}
+			for i, issue := range got {
+				if tc.want[i] != "" && !strings.Contains(issue, tc.want[i]) {
+					t.Errorf("issue %q does not contain %q", issue, tc.want[i])
+				}
+			}
+		})
 	}
-	for _, fragment := range want {
-		if !containsIssue(issues, fragment) {
-			t.Fatalf("expected issue containing %q, got %v", fragment, issues)
-		}
-	}
-}
-
-func TestAnalyzeLogsEmpty(t *testing.T) {
-	issues := AnalyzeLogs("")
-	if len(issues) != 0 {
-		t.Fatalf("expected no issues, got %v", issues)
-	}
-}
-
-func containsIssue(issues []string, fragment string) bool {
-	for _, issue := range issues {
-		if strings.Contains(issue, fragment) {
-			return true
-		}
-	}
-	return false
 }

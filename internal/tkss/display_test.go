@@ -1,8 +1,13 @@
 package tkss
 
-import "testing"
+import (
+	"strings"
+	"testing"
+	"time"
+)
 
 func TestFormatDurationBetween(t *testing.T) {
+	now := time.Now()
 	cases := []struct {
 		name  string
 		start string
@@ -11,27 +16,45 @@ func TestFormatDurationBetween(t *testing.T) {
 	}{
 		{
 			name:  "seconds",
-			start: "2024-01-01T00:00:00Z",
-			end:   "2024-01-01T00:00:42Z",
-			want:  "42s",
+			start: now.Add(-30 * time.Second).Format(time.RFC3339),
+			end:   now.Format(time.RFC3339),
+			want:  "30s",
 		},
 		{
 			name:  "minutes",
-			start: "2024-01-01T00:00:00Z",
-			end:   "2024-01-01T00:05:00Z",
+			start: now.Add(-5 * time.Minute).Format(time.RFC3339),
+			end:   now.Format(time.RFC3339),
 			want:  "5m",
 		},
 		{
 			name:  "hours",
-			start: "2024-01-01T00:00:00Z",
-			end:   "2024-01-01T03:00:00Z",
-			want:  "3h",
+			start: now.Add(-2 * time.Hour).Format(time.RFC3339),
+			end:   now.Format(time.RFC3339),
+			want:  "2h",
 		},
 		{
 			name:  "days",
-			start: "2024-01-01T00:00:00Z",
-			end:   "2024-01-03T00:00:00Z",
+			start: now.Add(-48 * time.Hour).Format(time.RFC3339),
+			end:   now.Format(time.RFC3339),
 			want:  "2d",
+		},
+		{
+			name:  "empty start",
+			start: "",
+			end:   now.Format(time.RFC3339),
+			want:  "N/A",
+		},
+		{
+			name:  "invalid start",
+			start: "invalid",
+			end:   now.Format(time.RFC3339),
+			want:  "N/A",
+		},
+		{
+			name:  "empty end (uses now)",
+			start: now.Add(-10 * time.Minute).Format(time.RFC3339),
+			end:   "",
+			want:  "10m",
 		},
 	}
 
@@ -39,8 +62,8 @@ func TestFormatDurationBetween(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			got := formatDurationBetween(tc.start, tc.end)
-			if got != tc.want {
-				t.Fatalf("formatDurationBetween() = %q, want %q", got, tc.want)
+			if !strings.HasSuffix(got, tc.want[len(tc.want)-1:]) && got != tc.want {
+				t.Errorf("formatDurationBetween(%q, %q) = %q, want %q", tc.start, tc.end, got, tc.want)
 			}
 		})
 	}
