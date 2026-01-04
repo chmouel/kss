@@ -3,7 +3,7 @@ cask "kss" do
   name "kss"
   desc "kss - Enhanced Kubernetes Pod Inspection"
   homepage "https://github.com/chmouel/kss"
-  version "1.1.1"
+  version "1.2.0"
 
   livecheck do
     skip "Auto-generated on release."
@@ -13,17 +13,17 @@ cask "kss" do
 
   on_macos do
     url "https://github.com/chmouel/kss/releases/download/v#{version}/kss_Darwin_all.tar.gz"
-    sha256 "9944624d0ab7ea73c12a48ec41938b40d6bb684da604703c3313168159a1c99c"
+    sha256 "458c210d59bb825bd59ba0a94b5671b86d3489109c5d743d3c69968649ae89f7"
   end
 
   on_linux do
     on_intel do
       url "https://github.com/chmouel/kss/releases/download/v#{version}/kss_Linux_x86_64.tar.gz"
-      sha256 "45c96e43a8241a754aa73c922cc6796cdfd4d4d83abac231aa404dcbb5359c5e"
+      sha256 "a961f12f0ed18eea269a382089f61bffba83dfcf50ca30f2f361345253d9e80e"
     end
     on_arm do
       url "https://github.com/chmouel/kss/releases/download/v#{version}/kss_Linux_arm64.tar.gz"
-      sha256 "743e6aa2550197ba86266b247952a0488eaf6b9b17bb13a262670b15549fad45"
+      sha256 "e9c574ab54a598e1d5fd8e400865ad7d2a48926b7a040efe5a737feb1d0d3873"
     end
   end
 
