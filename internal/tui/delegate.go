@@ -1,0 +1,100 @@
+package tui
+
+import (
+	"fmt"
+	"io"
+
+	"github.com/charmbracelet/bubbles/list"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/chmouel/kss/internal/tekton"
+)
+
+var (
+	itemStyle         = lipgloss.NewStyle().PaddingLeft(2)
+	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(0).Foreground(lipgloss.Color("205")).Bold(true) // Pink selection
+	
+	// Status Colors
+	statusRunning   = lipgloss.NewStyle().Foreground(lipgloss.Color("220")) // Yellow
+	statusSuccess   = lipgloss.NewStyle().Foreground(lipgloss.Color("42"))  // Green
+	statusFail      = lipgloss.NewStyle().Foreground(lipgloss.Color("196")) // Red
+	statusWaiting   = lipgloss.NewStyle().Foreground(lipgloss.Color("245")) // Gray
+	
+	// Text Colors
+	dimmedText = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+)
+
+type itemDelegate struct{}
+
+func (d itemDelegate) Height() int                             { return 2 }
+func (d itemDelegate) Spacing() int                            { return 0 }
+func (d itemDelegate) Update(_ tea.Msg, _ *list.Model) tea.Cmd { return nil }
+
+func (d itemDelegate) Render(w io.Writer, m list.Model, index int, item list.Item) {
+	var (
+		title, desc string
+		statusIcon  string
+		statusStyle lipgloss.Style
+	)
+
+	if podItem, ok := item.(PodItem); ok {
+		title = podItem.title
+		desc = podItem.desc
+		
+		// Determine status style and icon for Pod
+		switch podItem.pod.Status.Phase {
+		case "Running", "Succeeded":
+			statusStyle = statusSuccess
+			statusIcon = " " // Box
+		case "Failed", "Error":
+			statusStyle = statusFail
+			statusIcon = "✖ "
+		case "Pending":
+			statusStyle = statusRunning
+			statusIcon = "⏳ "
+		default:
+			statusStyle = statusWaiting
+			statusIcon = "• "
+		}
+	} else if prItem, ok := item.(PipelineRunItem); ok {
+		title = prItem.title
+		desc = prItem.desc
+
+		// Determine status for PipelineRun
+		_, color, _, _ := tekton.StatusLabel(prItem.pr.Status.Conditions)
+		switch color {
+		case "green":
+			statusStyle = statusSuccess
+			statusIcon = "🚀 "
+		case "red", "magenta":
+			statusStyle = statusFail
+			statusIcon = "✖ "
+		case "yellow":
+			statusStyle = statusRunning
+			statusIcon = "🏃 "
+		default:
+			statusStyle = statusWaiting
+			statusIcon = "• "
+		}
+	} else {
+		return
+	}
+
+	if index == m.Index() {
+		// Selected State
+		
+		// Border accent on the left for selected item
+		selectedBar := lipgloss.NewStyle().Foreground(lipgloss.Color("205")).Render("│ ")
+		
+		fmt.Fprint(w, selectedBar)
+		fmt.Fprint(w, selectedItemStyle.Render(statusIcon + title))
+		fmt.Fprint(w, "\n")
+		fmt.Fprint(w, selectedBar)
+		fmt.Fprint(w, dimmedText.Render("  "+desc))
+	} else {
+		// Normal State
+		fmt.Fprint(w, itemStyle.Render(statusStyle.Render(statusIcon) + title))
+		fmt.Fprint(w, "\n")
+		fmt.Fprint(w, itemStyle.Render(dimmedText.Render("  "+desc)))
+	}
+}

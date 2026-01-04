@@ -35,7 +35,13 @@ type Model struct {
 	ChosenItem      list.Item
 	doctorResults   *DoctorResults
 	isDoctorLoading bool
+	focusedPane     int
 }
+
+const (
+	paneList    = 0
+	paneDetails = 1
+)
 
 const (
 	tabOverview = iota
@@ -61,6 +67,74 @@ var (
 			Padding(0, 1)
 
 	docStyle = lipgloss.NewStyle().Padding(1, 2)
+
+	// Overview Styles
+	overviewHeaderStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("86")). // Cyan
+				Bold(true).
+				MarginBottom(1)
+
+	sectionHeaderStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("86")). // Cyan
+				Bold(true).
+				MarginTop(1).
+				MarginBottom(0)
+
+	labelStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("243")). // Gray
+			Width(12)
+
+	valueStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("252")) // White/Gray
+
+	successStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("42"))  // Green
+	failedStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("196")) // Red
+	runningStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("220")) // Yellow
+	waitingStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("245")) // Gray
+
+	// Logs Styles
+	logHeaderStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("86")). // Cyan
+			Bold(true).
+			MarginTop(1).
+			MarginBottom(1)
+
+	logContentStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("250")) // Light Gray
+
+	// Events Styles
+	eventTimeStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("240")) // Dark Gray
+
+	eventReasonStyle = lipgloss.NewStyle().
+				Bold(true).
+				Foreground(lipgloss.Color("255")) // White
+
+	eventMessageStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("252")). // Light Gray
+				MarginLeft(4)
+
+	// Doctor Styles
+	doctorHeaderStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("86")). // Cyan
+				Bold(true).
+				MarginBottom(1)
+
+	doctorFindingStyle = lipgloss.NewStyle().
+				MarginLeft(2)
+
+	doctorRemediationStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("242")). // Gray
+				Italic(true).
+				MarginLeft(4)
+
+	// Layout Styles
+	appStyle = lipgloss.NewStyle().Margin(0, 0) // No margin to maximize space
+
+	detailsStyle = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("86")). // Cyan border
+			Padding(0, 1)
 )
 
 // ResourceMsg carries the result of fetching resources (pods or pipelineruns).
@@ -214,7 +288,7 @@ func (m Model) fetchPodEvents(podName string) EventsMsg {
 
 	// Format events
 	var eventBuilder strings.Builder
-	eventBuilder.WriteString(fmt.Sprintf("=== Events for Pod: %s ===\n\n", podName))
+	eventBuilder.WriteString(overviewHeaderStyle.Render(fmt.Sprintf("📅 Events for Pod: %s", podName)) + "\n\n")
 
 	for _, event := range validEvents {
 		// Parse timestamp
@@ -227,15 +301,24 @@ func (m Model) fetchPodEvents(podName string) EventsMsg {
 		}
 
 		// Format based on event type
-		typeIndicator := "•"
+		typeIcon := "•"
+		var typeStyle lipgloss.Style
 		if event.Type == "Warning" {
-			typeIndicator = "⚠"
+			typeIcon = "⚠"
+			typeStyle = failedStyle
+		} else {
+			typeStyle = successStyle
 		}
 
-		eventBuilder.WriteString(fmt.Sprintf("[%s] %s %s\n", timeStr, typeIndicator, event.Reason))
-		eventBuilder.WriteString(fmt.Sprintf("    %s\n", event.Message))
+		eventBuilder.WriteString(fmt.Sprintf("%s %s %s\n",
+			eventTimeStyle.Render(timeStr),
+			typeStyle.Render(typeIcon),
+			eventReasonStyle.Render(event.Reason)))
+
+		eventBuilder.WriteString(eventMessageStyle.Render(event.Message) + "\n")
+
 		if event.Count > 1 {
-			eventBuilder.WriteString(fmt.Sprintf("    (occurred %d times)\n", event.Count))
+			eventBuilder.WriteString(eventMessageStyle.Render(fmt.Sprintf("(occurred %d times)", event.Count)) + "\n")
 		}
 		eventBuilder.WriteString("\n")
 	}
@@ -258,7 +341,7 @@ func (m Model) fetchPipelineRunEvents(prName string) EventsMsg {
 	// Collect all events from all TaskRuns (both TaskRun events and Pod events)
 	var allEvents []Event
 	var eventBuilder strings.Builder
-	eventBuilder.WriteString(fmt.Sprintf("=== Events for PipelineRun: %s ===\n\n", prName))
+	eventBuilder.WriteString(overviewHeaderStyle.Render(fmt.Sprintf("📅 Events for PipelineRun: %s", prName)) + "\n\n")
 
 	for i := range taskRuns {
 		tr := &taskRuns[i]
@@ -324,7 +407,7 @@ func (m Model) fetchPipelineRunEvents(prName string) EventsMsg {
 			})
 
 			// Add header for this TaskRun
-			eventBuilder.WriteString(fmt.Sprintf("--- TaskRun: %s ---\n", taskName))
+			eventBuilder.WriteString(sectionHeaderStyle.Render(fmt.Sprintf("--- TaskRun: %s ---", taskName)) + "\n")
 
 			for _, event := range combinedEvents {
 				// Parse timestamp
@@ -337,15 +420,24 @@ func (m Model) fetchPipelineRunEvents(prName string) EventsMsg {
 				}
 
 				// Format based on event type
-				typeIndicator := "•"
+				typeIcon := "•"
+				var typeStyle lipgloss.Style
 				if event.Type == "Warning" {
-					typeIndicator = "⚠"
+					typeIcon = "⚠"
+					typeStyle = failedStyle
+				} else {
+					typeStyle = successStyle
 				}
 
-				eventBuilder.WriteString(fmt.Sprintf("[%s] %s %s\n", timeStr, typeIndicator, event.Reason))
-				eventBuilder.WriteString(fmt.Sprintf("    %s\n", event.Message))
+				eventBuilder.WriteString(fmt.Sprintf("%s %s %s\n",
+					eventTimeStyle.Render(timeStr),
+					typeStyle.Render(typeIcon),
+					eventReasonStyle.Render(event.Reason)))
+
+				eventBuilder.WriteString(eventMessageStyle.Render(event.Message) + "\n")
+
 				if event.Count > 1 {
-					eventBuilder.WriteString(fmt.Sprintf("    (occurred %d times)\n", event.Count))
+					eventBuilder.WriteString(eventMessageStyle.Render(fmt.Sprintf("(occurred %d times)", event.Count)) + "\n")
 				}
 			}
 			eventBuilder.WriteString("\n")
@@ -372,7 +464,14 @@ func (m Model) FetchLogs(item list.Item) tea.Cmd {
 			// Just fetch logs for the first container for now
 			container := pod.Status.ContainerStatuses[0].Name
 			logs, err := kube.ShowLog("kubectl", model.Args{MaxLines: "100"}, container, pod.Metadata.Name, false)
-			return LogsMsg{content: logs, err: err}
+
+			// Simple style for single pod logs
+			var logBuilder strings.Builder
+			logBuilder.WriteString(overviewHeaderStyle.Render(fmt.Sprintf("📜 Logs for Pod: %s", pod.Metadata.Name)) + "\n\n")
+			// Force wrap logs to viewport width to prevent layout breaking
+			logBuilder.WriteString(logContentStyle.Width(m.viewport.Width).Render(logs))
+
+			return LogsMsg{content: logBuilder.String(), err: err}
 		}
 
 		if prItem, ok := item.(PipelineRunItem); ok {
@@ -389,7 +488,7 @@ func (m Model) FetchLogs(item list.Item) tea.Cmd {
 
 			// Build a summary of logs from all TaskRuns
 			var logBuilder strings.Builder
-			logBuilder.WriteString(fmt.Sprintf("=== Logs for PipelineRun: %s ===\n\n", pr.Metadata.Name))
+			logBuilder.WriteString(overviewHeaderStyle.Render(fmt.Sprintf("📜 Logs for PipelineRun: %s", pr.Metadata.Name)) + "\n\n")
 
 			for i := range taskRuns {
 				tr := &taskRuns[i]
@@ -412,13 +511,14 @@ func (m Model) FetchLogs(item list.Item) tea.Cmd {
 				// Get logs from the first step container (usually the main task)
 				if len(pod.Spec.Containers) > 0 {
 					container := pod.Spec.Containers[0].Name
-					logBuilder.WriteString(fmt.Sprintf("--- TaskRun: %s (Container: %s) ---\n", taskName, container))
+					header := fmt.Sprintf("--- TaskRun: %s (Container: %s) ---", taskName, container)
+					logBuilder.WriteString(logHeaderStyle.Render(header) + "\n")
 
 					logs, err := kube.ShowLog("kubectl", model.Args{MaxLines: "50"}, container, podName, false)
 					if err != nil {
 						logBuilder.WriteString(fmt.Sprintf("Error fetching logs: %v\n", err))
 					} else {
-						logBuilder.WriteString(logs)
+						logBuilder.WriteString(logContentStyle.Render(logs))
 					}
 					logBuilder.WriteString("\n\n")
 				}
@@ -615,6 +715,21 @@ func categorizeAndRemediate(issue string, container model.ContainerStatus) (Seve
 	return SeverityInfo, "Review container status and logs for additional context."
 }
 
+// loadTabContent returns the command to fetch content for the active tab
+func (m Model) loadTabContent(item list.Item) tea.Cmd {
+	switch m.activeTab {
+	case tabLogs:
+		return m.FetchLogs(item)
+	case tabEvents:
+		return m.FetchEvents(item)
+	case tabDoctor:
+		m.isDoctorLoading = true
+		m.doctorResults = nil
+		return m.FetchDoctor(item)
+	}
+	return nil
+}
+
 // categorizeLogIssue assigns severity and remediation based on log analysis
 func categorizeLogIssue(issue string) (Severity, string) {
 	issueLower := strings.ToLower(issue)
@@ -638,7 +753,7 @@ func categorizeLogIssue(issue string) (Severity, string) {
 // NewModel creates a new TUI model for the given resource type.
 func NewModel(resourceType, namespace string, kubectlArgs []string) Model {
 	// Initialize with dummy data, will be populated on init
-	l := list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
+	l := list.New([]list.Item{}, itemDelegate{}, 0, 0)
 	l.Title = fmt.Sprintf("KSS Dashboard - %s", strings.ToUpper(resourceType[:1])+resourceType[1:])
 	l.Styles.Title = titleStyle
 	l.SetShowHelp(false)
@@ -709,110 +824,79 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case tea.KeyMsg:
-		// Handle scrollable tabs (Logs, Events, Doctor) differently
-		isScrollableTab := m.activeTab == tabLogs || m.activeTab == tabEvents || m.activeTab == tabDoctor
-
-		if isScrollableTab {
-			switch msg.String() {
-			case "q", "ctrl+c":
-				return m, tea.Quit
-			case "enter":
-				m.ChosenItem = m.list.SelectedItem()
-				return m, tea.Quit
-			case "tab":
-				m.activeTab = (m.activeTab + 1) % 4
-				item := m.list.SelectedItem()
-				if item != nil {
-					switch m.activeTab {
-					case tabLogs:
-						cmds = append(cmds, m.FetchLogs(item))
-					case tabEvents:
-						cmds = append(cmds, m.FetchEvents(item))
-					case tabDoctor:
-						m.isDoctorLoading = true
-						m.doctorResults = nil
-						cmds = append(cmds, m.FetchDoctor(item))
-					}
-				}
-			case "1", "2", "3", "4":
-				oldTab := m.activeTab
-				m.activeTab = int(msg.Runes[0] - '1')
-				if oldTab != m.activeTab {
-					item := m.list.SelectedItem()
-					if item != nil {
-						switch m.activeTab {
-						case tabLogs:
-							cmds = append(cmds, m.FetchLogs(item))
-						case tabEvents:
-							cmds = append(cmds, m.FetchEvents(item))
-						case tabDoctor:
-							m.isDoctorLoading = true
-							m.doctorResults = nil
-							cmds = append(cmds, m.FetchDoctor(item))
-						}
-					}
-				}
-			default:
-				// Let appropriate viewport handle j/k/up/down/pgup/pgdn
-				switch m.activeTab {
-				case tabLogs:
-					m.viewport, cmd = m.viewport.Update(msg)
-				case tabEvents:
-					m.eventsViewport, cmd = m.eventsViewport.Update(msg)
-				case tabDoctor:
-					m.doctorViewport, cmd = m.doctorViewport.Update(msg)
-				}
-				cmds = append(cmds, cmd)
-				return m, tea.Batch(cmds...)
+		// Global Navigation (Tabs)
+		switch msg.String() {
+		case "tab":
+			m.activeTab = (m.activeTab + 1) % 4
+			item := m.list.SelectedItem()
+			if item != nil {
+				cmds = append(cmds, m.loadTabContent(item))
 			}
-		} else {
-			// Not in scrollable tab - handle normally
-			switch msg.String() {
-			case "q", "ctrl+c":
-				return m, tea.Quit
-			case "enter":
+			return m, tea.Batch(cmds...)
+		case "1", "2", "3", "4":
+			m.activeTab = int(msg.Runes[0] - '1')
+			item := m.list.SelectedItem()
+			if item != nil {
+				cmds = append(cmds, m.loadTabContent(item))
+			}
+			return m, tea.Batch(cmds...)
+		case "ctrl+c", "q":
+			return m, tea.Quit
+		case "enter":
+			if m.focusedPane == paneList {
 				m.ChosenItem = m.list.SelectedItem()
 				return m, tea.Quit
-			case "tab":
-				m.activeTab = (m.activeTab + 1) % 4
-				item := m.list.SelectedItem()
-				if item != nil {
-					switch m.activeTab {
-					case tabLogs:
-						cmds = append(cmds, m.FetchLogs(item))
-					case tabEvents:
-						cmds = append(cmds, m.FetchEvents(item))
-					case tabDoctor:
-						m.isDoctorLoading = true
-						m.doctorResults = nil
-						cmds = append(cmds, m.FetchDoctor(item))
-					}
-				}
-			case "r":
-				return m, m.FetchResources()
-			case "1", "2", "3", "4":
-				oldTab := m.activeTab
-				m.activeTab = int(msg.Runes[0] - '1')
-				if oldTab != m.activeTab {
-					item := m.list.SelectedItem()
-					if item != nil {
-						switch m.activeTab {
-						case tabLogs:
-							cmds = append(cmds, m.FetchLogs(item))
-						case tabEvents:
-							cmds = append(cmds, m.FetchEvents(item))
-						case tabDoctor:
-							m.isDoctorLoading = true
-							m.doctorResults = nil
-							cmds = append(cmds, m.FetchDoctor(item))
-						}
-					}
-				}
 			}
 		}
 
+		// Pane Navigation
+		switch msg.String() {
+		case "left":
+			m.focusedPane = paneList
+			return m, nil
+		case "right":
+			m.focusedPane = paneDetails
+			return m, nil
+		}
+
+		// Routed Input
+		if m.focusedPane == paneList {
+			m.list, cmd = m.list.Update(msg)
+			cmds = append(cmds, cmd)
+			
+			// If selection changed, reload tab content
+			// We can't easily detect selection change without storing prev selection, 
+			// but triggering load is safe (it's async).
+			// Actually, list update might not have changed selection yet. 
+			// But for simplicity, we can let the user press enter or just re-fetch on tab switch.
+			// Better: Check if list item changed? 
+			// For now, let's just update the list. The viewport content updates when switching tabs 
+			// or when explicitly requested. 
+			// To make it responsive, we should update content on selection change.
+			// But list.Update doesn't return "selection changed" event.
+			// We can check m.list.SelectedItem() before and after.
+			
+			// However, keeping it simple: selecting an item is "Enter" or just navigating?
+			// The original code updated content on tab switch or init. 
+			// Let's stick to that for now to avoid excessive fetches while scrolling.
+			
+		} else {
+			// Details Pane Input
+			switch m.activeTab {
+			case tabLogs:
+				m.viewport, cmd = m.viewport.Update(msg)
+			case tabEvents:
+				m.eventsViewport, cmd = m.eventsViewport.Update(msg)
+			case tabDoctor:
+				m.doctorViewport, cmd = m.doctorViewport.Update(msg)
+			}
+			cmds = append(cmds, cmd)
+		}
+		
+		return m, tea.Batch(cmds...)
+
 	case tea.WindowSizeMsg:
-		h, v := docStyle.GetFrameSize()
+		h, v := appStyle.GetFrameSize()
 		m.width = msg.Width - h
 		m.height = msg.Height - v
 
@@ -830,8 +914,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			listWidth = minListWidth
 		}
 
-		// Calculate details width (remaining space minus margins and borders)
-		detailsWidth := m.width - listWidth - borderWidth - paddingWidth - 2 // 2 for margin
+		// Calculate details width (remaining space minus borders)
+		// Border takes 2 width (left+right)
+		detailsWidth := m.width - listWidth - 2 
 		if detailsWidth < minDetailsWidth {
 			detailsWidth = minDetailsWidth
 		}
@@ -839,28 +924,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Set list dimensions
 		m.list.SetSize(listWidth, m.height)
 
-		// Set viewport dimensions (subtract space for tabs and box borders)
-		tabHeight := 1                                  // Tab bar takes 1 line
-		boxBorderHeight := borderWidth + paddingWidth/2 // Top and bottom borders + vertical padding
-		viewportHeight := m.height - tabHeight - boxBorderHeight
+		// Set viewport dimensions
+		// Tab bar takes 1 line
+		// Border takes 2 height (top+bottom)
+		// Extra 1 line for safety against wrapping
+		viewportHeight := m.height - 4
 		if viewportHeight < 5 {
 			viewportHeight = 5
 		}
 
-		m.viewport.Width = detailsWidth
+		m.viewport.Width = detailsWidth - 2 // Content padding
 		m.viewport.Height = viewportHeight
-		m.eventsViewport.Width = detailsWidth
+		m.eventsViewport.Width = detailsWidth - 2
 		m.eventsViewport.Height = viewportHeight
-		m.doctorViewport.Width = detailsWidth
+		m.doctorViewport.Width = detailsWidth - 2
 		m.doctorViewport.Height = viewportHeight
 
 		m.ready = true
-	}
-
-	// Update list only when not in scrollable tabs (so arrow keys don't conflict)
-	if m.activeTab != tabLogs && m.activeTab != tabEvents && m.activeTab != tabDoctor {
-		m.list, cmd = m.list.Update(msg)
-		cmds = append(cmds, cmd)
 	}
 
 	return m, tea.Batch(cmds...)
@@ -868,20 +948,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // visibleLength calculates the visible length of a string, excluding ANSI escape codes.
 func visibleLength(s string) int {
-	// Simple ANSI code removal for length calculation
-	inEscape := false
-	length := 0
-	for _, r := range s {
-		switch {
-		case r == '\033':
-			inEscape = true
-		case inEscape && r == 'm':
-			inEscape = false
-		case !inEscape:
-			length++
-		}
-	}
-	return length
+	return lipgloss.Width(s)
 }
 
 // View renders the TUI to a string.
@@ -895,118 +962,73 @@ func (m Model) View() string {
 		return "\n  Terminal too small. Please resize."
 	}
 
-	// Simple approach: build the view as plain strings with explicit formatting
-	var b strings.Builder
-
-	// Get the list view
+	// 1. Render List (Sidebar)
 	listView := m.list.View()
 
-	// Build tabs line
-	tabs := []string{"1:Overview", "2:Logs", "3:Events", "4:Doctor"}
-	var tabLine strings.Builder
-	tabLine.WriteString("  ") // Indent
-	for i, t := range tabs {
-		if i == m.activeTab {
-			// Active tab: purple background, white text
-			tabLine.WriteString("\033[48;5;98m\033[38;5;231m ")
-			tabLine.WriteString(t)
-			tabLine.WriteString(" \033[0m ")
-		} else {
-			// Inactive tab: gray
-			tabLine.WriteString("\033[38;5;243m ")
-			tabLine.WriteString(t)
-			tabLine.WriteString(" \033[0m ")
-		}
-	}
-
-	// Get details content
-	details := m.renderDetails()
-
-	// Split list into lines to render side-by-side
-	listLines := strings.Split(listView, "\n")
-
-	// Build details pane with border
-	detailLines := strings.Split(details, "\n")
-	maxDetailWidth := m.width - m.width/3 - 6
-	if maxDetailWidth < 40 {
-		maxDetailWidth = 40
-	}
-
-	// Header with tabs
-	b.WriteString(strings.Repeat(" ", m.width/3+2))
-	b.WriteString(tabLine.String())
-	b.WriteString("\n")
-
-	// Top border
-	b.WriteString(strings.Repeat(" ", m.width/3+2))
-	b.WriteString("╭")
-	b.WriteString(strings.Repeat("─", maxDetailWidth))
-	b.WriteString("╮\n")
-
-	// Content area - side by side
-	maxLines := len(listLines)
-	if len(detailLines)+4 > maxLines {
-		maxLines = len(detailLines) + 4
-	}
-
-	for i := 0; i < maxLines && i < m.height-6; i++ {
-		// List column
-		if i < len(listLines) {
-			b.WriteString(listLines[i])
-			// Pad to list width - use simple calculation
-			// (ANSI codes don't contribute to visible width)
-			padding := m.width/3 + 2 - visibleLength(listLines[i])
-			if padding > 0 {
-				b.WriteString(strings.Repeat(" ", padding))
-			}
-		} else {
-			b.WriteString(strings.Repeat(" ", m.width/3+2))
-		}
-
-		// Details border and content
-		b.WriteString("│ ")
-		if i < len(detailLines) {
-			line := detailLines[i]
-			visLen := visibleLength(line)
-			if visLen > maxDetailWidth-2 {
-				// Truncate to visible width (this is approximate with ANSI codes)
-				line = line[:maxDetailWidth-2]
-				visLen = visibleLength(line)
-			}
-			b.WriteString(line)
-			padding := maxDetailWidth - 2 - visLen
-			if padding > 0 {
-				b.WriteString(strings.Repeat(" ", padding))
-			}
-		} else {
-			b.WriteString(strings.Repeat(" ", maxDetailWidth-2))
-		}
-		b.WriteString(" │\n")
-	}
-
-	// Bottom border
-	b.WriteString(strings.Repeat(" ", m.width/3+2))
-	b.WriteString("╰")
-	b.WriteString(strings.Repeat("─", maxDetailWidth))
-	b.WriteString("╯\n")
-
-	// Help text - show different help based on active tab
-	var helpText string
-	if m.activeTab == tabLogs || m.activeTab == tabEvents || m.activeTab == tabDoctor {
-		contentType := "logs"
-		switch m.activeTab {
-		case tabEvents:
-			contentType = "events"
-		case tabDoctor:
-			contentType = "doctor analysis"
-		}
-		helpText = fmt.Sprintf("↑/↓/j/k: scroll %s • pgup/pgdn: page • tab: switch tab • 1-4: jump to tab • enter: select & exit • q: quit", contentType)
+	// Determine border color based on focus
+	var borderColor lipgloss.Color
+	if m.focusedPane == paneDetails {
+		borderColor = lipgloss.Color("86") // Cyan (active)
 	} else {
-		helpText = "↑/↓: navigate • tab: switch tab • 1-4: jump to tab • enter: select & exit • q: quit"
+		borderColor = lipgloss.Color("240") // Dim gray (inactive)
 	}
-	b.WriteString(fmt.Sprintf("\n  \033[38;5;241m%s\033[0m\n", helpText))
 
-	return b.String()
+	// 2. Render Tabs
+	tabs := []string{"Overview", "Logs", "Events", "Doctor"}
+	var renderedTabs []string
+
+	for i, t := range tabs {
+		var style lipgloss.Style
+		isFirst := i == 0
+		isActive := i == m.activeTab
+
+		if isActive {
+			style = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("255")).
+				Background(borderColor). // Matches border color dynamically
+				Bold(true).
+				Padding(0, 1)
+		} else {
+			style = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("240")).
+				Padding(0, 1)
+		}
+
+		// Add number prefix
+		content := fmt.Sprintf("%d:%s", i+1, t)
+		
+		if isFirst {
+			renderedTabs = append(renderedTabs, style.Render(content))
+		} else {
+			renderedTabs = append(renderedTabs, style.Render(" "+content))
+		}
+	}
+	
+	// Create the tab bar row
+	tabBar := lipgloss.JoinHorizontal(lipgloss.Top, renderedTabs...)
+	
+	// 3. Render Details Content
+	detailsContent := m.renderDetails()
+	
+	// Wrap details in the rounded border box
+	// Ensure the box fills the remaining height
+	// Available height = m.height
+	// Tab bar = 1 line
+	// Border = 2 lines (top/bottom)
+	// Content height should be: m.height - 1 (tabs) - 2 (borders) - 1 (safety) = m.height - 4
+	detailsBox := detailsStyle.
+		Width(m.viewport.Width). // viewport width already accounts for border padding in Update
+		Height(m.height - 4).    
+		BorderForeground(borderColor).
+		Render(detailsContent)
+
+	// 4. Combine Tabs + Details Box
+	rightSide := lipgloss.JoinVertical(lipgloss.Left, tabBar, detailsBox)
+
+	// 5. Join List + Right Side
+	mainView := lipgloss.JoinHorizontal(lipgloss.Top, listView, rightSide)
+
+	return appStyle.Render(mainView)
 }
 
 func (m Model) renderDetails() string {
@@ -1039,19 +1061,50 @@ func (m Model) renderDetails() string {
 }
 
 func (m Model) renderOverview(item list.Item) string {
+	var sb strings.Builder
+
 	if podItem, ok := item.(PodItem); ok {
 		pod := podItem.pod
-		var sb strings.Builder
-		sb.WriteString(fmt.Sprintf("Pod: %s\n\n", pod.Metadata.Name))
-		sb.WriteString(fmt.Sprintf("Namespace: %s\n", pod.Metadata.Namespace))
-		sb.WriteString(fmt.Sprintf("Phase: %s\n", pod.Status.Phase))
-		sb.WriteString(fmt.Sprintf("Age: %s\n", util.FormatDuration(pod.Status.StartTime)))
+
+		// Header
+		sb.WriteString(overviewHeaderStyle.Render(fmt.Sprintf("  Pod: %s", pod.Metadata.Name)) + "\n")
+
+		// Details
+		sb.WriteString(renderRow("🔖 Namespace", pod.Metadata.Namespace))
+
+		// Status with color
+		status := pod.Status.Phase
+		var style lipgloss.Style
+		switch status {
+		case "Running", "Succeeded":
+			style = successStyle
+		case "Failed", "Error":
+			style = failedStyle
+		case "Pending":
+			style = runningStyle
+		default:
+			style = waitingStyle
+		}
+		sb.WriteString(renderRow("🚥 Phase", style.Render(status)))
+
+		sb.WriteString(renderRow("🕒 Age", util.FormatDuration(pod.Status.StartTime)))
 
 		if len(pod.Status.ContainerStatuses) > 0 {
-			sb.WriteString("\nContainers:\n")
+			sb.WriteString(sectionHeaderStyle.Render("\n🐳 Containers") + "\n")
 			for _, c := range pod.Status.ContainerStatuses {
 				status, _ := c.StateLabel()
-				sb.WriteString(fmt.Sprintf("  • %s: %s\n", c.Name, status))
+
+				// Style the container status
+				var cStyle lipgloss.Style
+				if strings.HasPrefix(status, "Running") || strings.HasPrefix(status, "Completed") {
+					cStyle = successStyle
+				} else if strings.Contains(status, "Error") || strings.Contains(status, "BackOff") {
+					cStyle = failedStyle
+				} else {
+					cStyle = waitingStyle
+				}
+
+				sb.WriteString(fmt.Sprintf("  %s %s: %s\n", cStyle.Render("•"), c.Name, cStyle.Render(status)))
 			}
 		}
 		return sb.String()
@@ -1059,18 +1112,44 @@ func (m Model) renderOverview(item list.Item) string {
 
 	if prItem, ok := item.(PipelineRunItem); ok {
 		pr := prItem.pr
-		var sb strings.Builder
-		sb.WriteString(fmt.Sprintf("PipelineRun: %s\n\n", pr.Metadata.Name))
-		sb.WriteString(fmt.Sprintf("Namespace: %s\n", pr.Metadata.Namespace))
 
-		label, _, reason, _ := tekton.StatusLabel(pr.Status.Conditions)
-		sb.WriteString(fmt.Sprintf("Status: %s (%s)\n", label, reason))
-		sb.WriteString(fmt.Sprintf("Age: %s\n", util.FormatDuration(pr.Metadata.CreationTimestamp)))
+		// Header
+		sb.WriteString(overviewHeaderStyle.Render(fmt.Sprintf("🚀 PipelineRun: %s", pr.Metadata.Name)) + "\n")
+
+		// Details
+		sb.WriteString(renderRow("🔖 Namespace", pr.Metadata.Namespace))
+
+		label, color, reason, _ := tekton.StatusLabel(pr.Status.Conditions)
+
+		// Map text color to lipgloss style
+		var style lipgloss.Style
+		switch color {
+		case "green":
+			style = successStyle
+		case "red", "magenta":
+			style = failedStyle
+		case "yellow":
+			style = runningStyle
+		default:
+			style = waitingStyle
+		}
+
+		statusText := label
+		if reason != "" && label != "Succeeded" {
+			statusText = fmt.Sprintf("%s (%s)", label, reason)
+		}
+		sb.WriteString(renderRow("🚥 Status", style.Render(statusText)))
+
+		sb.WriteString(renderRow("🕒 Age", util.FormatDuration(pr.Metadata.CreationTimestamp)))
 
 		return sb.String()
 	}
 
 	return "Unknown item type"
+}
+
+func renderRow(label, value string) string {
+	return fmt.Sprintf("%s %s\n", labelStyle.Render(label), valueStyle.Render(value))
 }
 
 // renderDoctorResults formats doctor analysis results for display
@@ -1082,11 +1161,11 @@ func (m Model) renderDoctorResults(results *DoctorResults, viewportWidth int) st
 	var sb strings.Builder
 
 	// Header
-	sb.WriteString(fmt.Sprintf("Doctor Analysis: %s\n", results.ResourceName))
+	sb.WriteString(overviewHeaderStyle.Render(fmt.Sprintf("🚑 Doctor Analysis: %s", results.ResourceName)) + "\n")
 	sb.WriteString(fmt.Sprintf("Analyzed at: %s\n\n", results.AnalyzedAt.Format("15:04:05")))
 
 	if len(results.Findings) == 0 {
-		sb.WriteString("\033[38;5;242mNo issues detected. All containers appear healthy.\033[0m\n")
+		sb.WriteString(successStyle.Render("✨ No issues detected. All containers appear healthy.") + "\n")
 		return sb.String()
 	}
 
@@ -1114,7 +1193,7 @@ func (m Model) renderDoctorResults(results *DoctorResults, viewportWidth int) st
 			prefix = "(Init) "
 		}
 
-		sb.WriteString(fmt.Sprintf("\n\033[1;37m%sContainer: %s\033[0m\n", prefix, containerName))
+		sb.WriteString(sectionHeaderStyle.Render(fmt.Sprintf("\n📦 %sContainer: %s", prefix, containerName)) + "\n")
 
 		// Group by severity
 		critical := []DoctorFinding{}
@@ -1134,17 +1213,17 @@ func (m Model) renderDoctorResults(results *DoctorResults, viewportWidth int) st
 
 		// Render critical findings
 		for _, f := range critical {
-			sb.WriteString(renderFinding(f, "✖", "\033[1;31m")) // Red bold X
+			sb.WriteString(renderFinding(f, "✖", failedStyle)) // Red bold X
 		}
 
 		// Render warnings
 		for _, f := range warnings {
-			sb.WriteString(renderFinding(f, "⚠", "\033[1;33m")) // Yellow bold warning
+			sb.WriteString(renderFinding(f, "⚠", runningStyle)) // Yellow bold warning
 		}
 
 		// Render info
 		for _, f := range info {
-			sb.WriteString(renderFinding(f, "ℹ", "\033[1;36m")) // Cyan bold info
+			sb.WriteString(renderFinding(f, "ℹ", lipgloss.NewStyle().Foreground(lipgloss.Color("39")))) // Blue info
 		}
 
 		sb.WriteString("\n")
@@ -1165,15 +1244,15 @@ func (m Model) renderDoctorResults(results *DoctorResults, viewportWidth int) st
 		}
 	}
 
-	sb.WriteString("\n\033[1;37mSummary:\033[0m ")
+	sb.WriteString(doctorHeaderStyle.Render("\n📊 Summary:") + " ")
 	if criticalCount > 0 {
-		sb.WriteString(fmt.Sprintf("\033[1;31m%d critical\033[0m  ", criticalCount))
+		sb.WriteString(failedStyle.Render(fmt.Sprintf("%d critical", criticalCount)) + "  ")
 	}
 	if warningCount > 0 {
-		sb.WriteString(fmt.Sprintf("\033[1;33m%d warnings\033[0m  ", warningCount))
+		sb.WriteString(runningStyle.Render(fmt.Sprintf("%d warnings", warningCount)) + "  ")
 	}
 	if infoCount > 0 {
-		sb.WriteString(fmt.Sprintf("\033[1;36m%d info\033[0m", infoCount))
+		sb.WriteString(fmt.Sprintf("%d info", infoCount))
 	}
 	sb.WriteString("\n")
 
@@ -1236,7 +1315,7 @@ func wrapText(text string, width, indent int) []string {
 }
 
 // renderFinding formats a single finding with icon, color, and remediation
-func renderFinding(f DoctorFinding, icon, color string) string {
+func renderFinding(f DoctorFinding, icon string, style lipgloss.Style) string {
 	var sb strings.Builder
 
 	// Icon + Message - wrap at reasonable width (80 chars)
@@ -1244,10 +1323,10 @@ func renderFinding(f DoctorFinding, icon, color string) string {
 	for i, line := range messageLines {
 		if i == 0 {
 			// First line with icon
-			sb.WriteString(fmt.Sprintf("  %s%s %s\033[0m\n", color, icon, strings.TrimSpace(line)))
+			sb.WriteString(fmt.Sprintf("  %s %s\n", style.Render(icon), strings.TrimSpace(line)))
 		} else {
 			// Continuation lines
-			sb.WriteString(fmt.Sprintf("  %s   %s\033[0m\n", color, strings.TrimSpace(line)))
+			sb.WriteString(fmt.Sprintf("  %s   %s\n", style.Render(" "), strings.TrimSpace(line)))
 		}
 	}
 
@@ -1256,9 +1335,9 @@ func renderFinding(f DoctorFinding, icon, color string) string {
 		remediationLines := wrapText(f.Remediation, 80, 6)
 		for i, line := range remediationLines {
 			if i == 0 {
-				sb.WriteString(fmt.Sprintf("    \033[38;5;242m→ %s\033[0m\n", strings.TrimSpace(line)))
+				sb.WriteString(doctorRemediationStyle.Render(fmt.Sprintf("→ %s", strings.TrimSpace(line))) + "\n")
 			} else {
-				sb.WriteString(fmt.Sprintf("    \033[38;5;242m  %s\033[0m\n", strings.TrimSpace(line)))
+				sb.WriteString(doctorRemediationStyle.Render(fmt.Sprintf("  %s", strings.TrimSpace(line))) + "\n")
 			}
 		}
 	}

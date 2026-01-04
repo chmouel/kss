@@ -2,9 +2,16 @@
 
 I present to you KSS, a refined utility designed to illuminate the current status of a Kubernetes pod and its associated containers and initContainers with clarity and precision.
 
-The standard `kubectl get pod` command, while functional, occasionally lacks the immediate depth one requires. Conversely, `kubectl describe pod` can offer an overwhelming abundance of detail that may obscure the pertinent facts. KSS bridges this gap, offering a comprehensive, aesthetically pleasing, and digestible overview of your pod's health, thereby allowing you to diagnose issues with dignity and efficiency.
+The standard `kubectl get pod` command, while functional, occasionally lacks
+the immediate depth one requires. Conversely, `kubectl describe pod` can offer
+an overwhelming abundance of detail that may obscure the pertinent facts. KSS
+bridges this gap, offering a comprehensive, aesthetically pleasing, and
+digestible overview of your pod's health, thereby allowing you to diagnose
+issues with dignity and efficiency.
 
-This repository also contains **TKSS**, a companion utility for Tekton `PipelineRun` inspection. It is intentionally similar in spirit to KSS and uses `kubectl` rather than the Tekton CLI.
+This repository also contains **TKSS**, a companion utility for Tekton
+`PipelineRun` inspection. It is intentionally similar in spirit to KSS and uses
+`kubectl` rather than the Tekton CLI.
 
 <img width="1193" height="847" alt="image" src="https://github.com/user-attachments/assets/c65ac2e8-ba61-4fbe-a72f-f70af4f9814a" />
 
