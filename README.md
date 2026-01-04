@@ -178,6 +178,8 @@ kss my-pod -l --maxlines 50
 kss my-pod -r "app" -l
 ```
 
+
+
 #### Continuous Monitoring
 
 ```bash
@@ -196,6 +198,8 @@ kss my-pod -d
 ```
 
 Doctor analysis also runs automatically when a container enters a failed state.
+
+<img width="1732" height="781" alt="image" src="https://github.com/user-attachments/assets/d5a6866d-62c9-4373-8ba1-38376a1698b8" />
 
 #### AI Explanation
 
