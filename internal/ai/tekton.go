@@ -94,7 +94,7 @@ Instructions:
 		return
 	}
 
-	renderExplanation(explanation)
+	renderExplanation(explanation, args.Persona)
 }
 
 func taskRunSummary(taskRuns []tekton.TaskRun) string {

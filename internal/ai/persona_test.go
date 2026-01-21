@@ -34,3 +34,27 @@ func TestPersonaInstructions(t *testing.T) {
 		}
 	})
 }
+
+func TestPersonaASCIIArt(t *testing.T) {
+	personas := []string{"butler", "pirate", "sergeant", "hacker", "genz", "neutral"}
+
+	for _, persona := range personas {
+		t.Run(persona+" persona", func(t *testing.T) {
+			got := personaASCIIArt(persona)
+			if got == "" {
+				t.Fatalf("personaASCIIArt(%q) returned empty string", persona)
+			}
+			if !strings.Contains(got, "\n") {
+				t.Fatalf("personaASCIIArt(%q) should return multi-line ASCII art", persona)
+			}
+		})
+	}
+
+	t.Run("unknown persona returns default", func(t *testing.T) {
+		got := personaASCIIArt("unknown")
+		defaultArt := personaASCIIArt("neutral")
+		if got != defaultArt {
+			t.Fatalf("personaASCIIArt(unknown) should return default art")
+		}
+	})
+}

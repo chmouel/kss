@@ -130,8 +130,14 @@ func callGemini(apiKey, modelName, prompt string) (string, error) {
 	return geminiResp.Candidates[0].Content.Parts[0].Text, nil
 }
 
-func renderExplanation(explanation string) {
+func renderExplanation(explanation, persona string) {
 	fmt.Print("\r")
+
+	art := personaASCIIArt(persona)
+	if art != "" {
+		fmt.Println(util.ColorText(art, "cyan"))
+		fmt.Println()
+	}
 
 	r, _ := glamour.NewTermRenderer(
 		glamour.WithAutoStyle(),

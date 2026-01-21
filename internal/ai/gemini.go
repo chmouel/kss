@@ -62,5 +62,5 @@ Instructions:
 		return
 	}
 
-	renderExplanation(explanation)
+	renderExplanation(explanation, args.Persona)
 }

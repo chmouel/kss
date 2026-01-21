@@ -31,3 +31,49 @@ func personaInstructions(persona string) string {
 		return "Speak in the persona of Alfred, a refined British butler. Be polite, formal, but efficient. Address the user as 'sir'. Never use the word 'master'."
 	}
 }
+
+func personaASCIIArt(persona string) string {
+	switch persona {
+	case "butler":
+		return `       __
+      /  \
+     | "" |
+      \__/  ,
+     /|  |\-'
+    (_|  |_)`
+	case "pirate":
+		return `    _____
+   /_____\
+   | x x |
+    \ ~ /
+   __|=|__
+  /  |||  \`
+	case "sergeant":
+		return `   _______
+  |_______|
+   (o   o)
+    | ^ |
+   /|===|\
+  (_|   |_)`
+	case "hacker":
+		return `    .---.
+   /     \
+   |{o o}|
+   |  >  |
+  /|=====|\
+ / |_____| \`
+	case "genz":
+		return `    .---.
+   ( o.o )
+    |>v<|
+   /|   |\
+  (_|   |_)
+     phone`
+	default: // neutral
+		return `    .---.
+   |     |
+   | o o |
+   |  -  |
+   |_____|`
+	}
+}
