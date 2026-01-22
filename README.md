@@ -2,6 +2,9 @@
 
 I present to you KSS, a refined utility designed to illuminate the current status of a Kubernetes pod and its associated containers and initContainers with clarity and precision.
 
+You may wonder how to pronounce `kss` ? just imagine a angry snake waking up from a hangover and trying to pronounce the sentence:
+`woo what a crazy night last night and what a hangover kssssssssssssseuuu`, well if you do then that's it!
+
 The standard `kubectl get pod` command, while functional, occasionally lacks
 the immediate depth one requires. Conversely, `kubectl describe pod` can offer
 an overwhelming abundance of detail that may obscure the pertinent facts. KSS
