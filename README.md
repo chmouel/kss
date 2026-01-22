@@ -203,6 +203,8 @@ Doctor analysis also runs automatically when a container enters a failed state.
 
 #### AI Explanation
 
+AI Explanation uses Gemini to be able to explain the failure with the context, you can make those explanations a bit less boring by applying some different role into it...
+
 ```bash
 # Request Gemini's explanation (requires GEMINI_API_KEY)
 export GEMINI_API_KEY=your-token
@@ -228,6 +230,26 @@ Personas at a glance:
 | hacker | Neutral, technical, concise |
 | pirate | Rough, nautical, a touch playful |
 | genz | Casual, slangy, emoji-friendly |
+
+##### Pirate 🏴‍☠️
+
+<img width="1751" height="1071" alt="image" src="https://github.com/user-attachments/assets/011bc022-1c2b-464d-bc78-4e9ecb6751f9" />
+
+##### Gen-z 🤳🏻
+
+<img width="1751" height="1079" alt="image" src="https://github.com/user-attachments/assets/7491585a-2055-44ea-8dbb-9ff100124412" />
+
+##### Butler 🤵
+
+<img width="1384" height="1038" alt="image" src="https://github.com/user-attachments/assets/4f73c923-61c4-4814-8cce-4bb2cd160397" />
+
+##### Sergeant 🪖
+
+<img width="1351" height="1059" alt="image" src="https://github.com/user-attachments/assets/2e3b5b42-3e75-4acf-8098-35077f810c29" />
+
+##### Cyberpunk Hacker  ⌨️
+
+<img width="1497" height="958" alt="image" src="https://github.com/user-attachments/assets/7deaed7a-390f-42f6-bbfa-3a7fa7dcf2aa" />
 
 #### Metadata & Events
 
