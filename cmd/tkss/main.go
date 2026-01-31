@@ -37,11 +37,6 @@ func main() {
 		args.PipelineRuns[i] = util.ResourceName(pipelineRun)
 	}
 
-	if err := tkss.RequireFzf(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
 	kctl := "kubectl"
 	if args.Namespace != "" {
 		kctl = fmt.Sprintf("kubectl -n %s", args.Namespace)

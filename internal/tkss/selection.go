@@ -1,10 +1,12 @@
 package tkss
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 
 	"github.com/chmouel/kss/internal/kube"
@@ -18,14 +20,6 @@ type StepTarget struct {
 	TaskName      string
 	PodName       string
 	ContainerName string
-}
-
-// RequireFzf ensures fzf is available in PATH.
-func RequireFzf() error {
-	if util.Which("fzf") == "" {
-		return fmt.Errorf("fzf is required but was not found in PATH")
-	}
-	return nil
 }
 
 // BuildStepTargets resolves TaskRun pods and returns selectable step targets.
@@ -64,12 +58,15 @@ func (t StepTarget) fzfLine() string {
 	return fmt.Sprintf("%s\t%s\t%s", displayTask, t.PodName, t.ContainerName)
 }
 
-// SelectStepTarget prompts for a step selection using fzf.
-func SelectStepTarget(targets []StepTarget) (StepTarget, error) {
-	if len(targets) == 0 {
-		return StepTarget{}, fmt.Errorf("no steps available for selection")
+func (t StepTarget) displayLine() string {
+	displayTask := t.TaskRunName
+	if t.TaskName != "" && t.TaskName != t.TaskRunName {
+		displayTask = fmt.Sprintf("%s (%s)", t.TaskName, t.TaskRunName)
 	}
+	return fmt.Sprintf("%s / %s", displayTask, t.ContainerName)
+}
 
+func selectStepWithFzf(targets []StepTarget) (StepTarget, error) {
 	lines := make([]string, 0, len(targets))
 	byLine := make(map[string]StepTarget, len(targets))
 	for _, target := range targets {
@@ -98,4 +95,51 @@ func SelectStepTarget(targets []StepTarget) (StepTarget, error) {
 	}
 
 	return selected, nil
+}
+
+func selectStepByPrompt(targets []StepTarget) (StepTarget, error) {
+	fmt.Println("Select a step:")
+	for i, target := range targets {
+		fmt.Printf("  %d) %s\n", i+1, target.displayLine())
+	}
+	fmt.Print("Enter number: ")
+
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		input, err := reader.ReadString('\n')
+		if err != nil {
+			return StepTarget{}, fmt.Errorf("failed to read selection: %w", err)
+		}
+		input = strings.TrimSpace(input)
+		if input == "" {
+			fmt.Print("Enter number: ")
+			continue
+		}
+
+		index, err := strconv.Atoi(input)
+		if err != nil || index < 1 || index > len(targets) {
+			fmt.Printf("Please enter a number between 1 and %d: ", len(targets))
+			continue
+		}
+
+		return targets[index-1], nil
+	}
+}
+
+// SelectStepTarget prompts for a step selection using fzf if available,
+// otherwise falls back to a numbered prompt.
+func SelectStepTarget(targets []StepTarget) (StepTarget, error) {
+	if len(targets) == 0 {
+		return StepTarget{}, fmt.Errorf("no steps available for selection")
+	}
+
+	if len(targets) == 1 {
+		return targets[0], nil
+	}
+
+	if util.Which("fzf") != "" {
+		return selectStepWithFzf(targets)
+	}
+
+	return selectStepByPrompt(targets)
 }
