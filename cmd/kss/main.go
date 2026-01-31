@@ -75,7 +75,7 @@ func main() {
 			if len(args.Pods) > 0 {
 				queryArgs = fmt.Sprintf("-q '%s'", strings.Join(args.Pods, " "))
 			}
-			runcmd := fmt.Sprintf("%s get pods -o name|fzf -0 -n 1 -m -1 %s --preview-window 'right:60%%:wrap' --preview='%s'", kctl, queryArgs, preview)
+			runcmd := fmt.Sprintf("%s get pods --sort-by='{.status.startTime}' -o name|fzf --tac -0 -n 1 -m -1 %s --preview-window 'right:60%%:wrap' --preview='%s'", kctl, queryArgs, preview)
 			cmd := exec.Command("sh", "-c", runcmd)
 			output, err := cmd.Output()
 			if err != nil {
@@ -127,7 +127,7 @@ func main() {
 		queryArgs = fmt.Sprintf("-q '%s'", strings.Join(args.Pods, " "))
 	}
 
-	runcmd := fmt.Sprintf("%s get pods -o name|fzf -0 -n 1 -m -1 %s --preview-window 'right:60%%:wrap' --preview='%s'", kctl, queryArgs, preview)
+	runcmd := fmt.Sprintf("%s get pods --sort-by='{.status.startTime}' -o name|fzf --tac -0 -n 1 -m -1 %s --preview-window 'right:60%%:wrap' --preview='%s'", kctl, queryArgs, preview)
 
 	cmd := exec.Command("sh", "-c", runcmd)
 	output, err := cmd.Output()

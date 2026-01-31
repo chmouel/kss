@@ -242,7 +242,7 @@ func resolvePipelineRuns(args tkss.Args, kctl string) ([]string, error) {
 		preview += " {}"
 	}
 
-	runcmd := fmt.Sprintf("%s get pipelineruns -o name|fzf -0 -n 1 -m -1 --preview-window 'down:60%%:wrap' --preview='%s'", kctl, preview)
+	runcmd := fmt.Sprintf("%s get pipelineruns --sort-by='{.status.startTime}' -o name|fzf --tac -0 -n 1 -m -1 --preview-window 'down:60%%:wrap' --preview='%s'", kctl, preview)
 	cmd := exec.Command("sh", "-c", runcmd)
 	output, err := cmd.Output()
 	if err != nil {
