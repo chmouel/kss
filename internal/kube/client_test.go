@@ -37,7 +37,7 @@ func TestKubectlArgs(t *testing.T) {
 		{
 			name: "with namespace",
 			args: model.Args{Namespace: "foo"},
-			want: []string{"-", "n", "foo"},
+			want: []string{"-n", "foo"},
 		},
 	}
 

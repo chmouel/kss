@@ -22,7 +22,7 @@ func KubectlArgs(args model.Args) []string {
 	if args.Namespace == "" {
 		return nil
 	}
-	return []string{"-", "n", args.Namespace}
+	return []string{"-n", args.Namespace}
 }
 
 // FetchPod retrieves pod details from Kubernetes
